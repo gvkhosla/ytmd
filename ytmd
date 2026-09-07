@@ -1,0 +1,736 @@
+#!/usr/bin/env python3
+"""
+ytmd — YouTube → local transcript library
+
+Pulls the full transcript of a YouTube video (captions via yt-dlp), stores it
+in a local SQLite FTS5 database, and writes a markdown file an agent can read
+or qmd can index.
+
+Usage:
+  ytmd <url>                         ingest a video (same as `ytmd add`)
+  ytmd add <url> [--lang LANG] [--force] [--cookies-from-browser NAME]
+  ytmd search <query> [-n 10] [--json]
+  ytmd show <id|title>
+  ytmd list [--json]
+  ytmd rm <id>
+  ytmd export [dir]
+  ytmd path
+  ytmd help
+
+Library (override with YTMD_DIR):
+  ~/ytmd/ytmd.db     SQLite + FTS5 source of truth
+  ~/ytmd/*.md        markdown export, one file per video
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import sqlite3
+import subprocess
+import sys
+import tempfile
+from datetime import datetime, timezone
+from pathlib import Path
+
+DIR = Path(os.environ.get("YTMD_DIR", Path.home() / "ytmd")).expanduser()
+DB_PATH = DIR / "ytmd.db"
+# Exact English only. `en.*` matches translated tracks (en-de, en-fr, …) and 429s.
+DEFAULT_LANG = os.environ.get("YTMD_LANG", "en,en-orig,en-US,en-GB")
+
+
+def die(msg, code=1):
+    print(f"ytmd: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def usage():
+    print(__doc__.strip())
+
+
+# ── library ──────────────────────────────────────────────────────────────────
+
+def ensure_dir():
+    DIR.mkdir(parents=True, exist_ok=True)
+
+
+def connect():
+    ensure_dir()
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS videos (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          channel TEXT,
+          url TEXT NOT NULL,
+          uploaded_at TEXT,
+          duration_s INTEGER,
+          description TEXT,
+          captions TEXT NOT NULL,
+          lang TEXT,
+          ingested_at TEXT NOT NULL,
+          transcript TEXT NOT NULL
+        );
+        CREATE VIRTUAL TABLE IF NOT EXISTS videos_fts USING fts5(
+          id UNINDEXED,
+          title,
+          channel,
+          transcript,
+          tokenize = 'porter unicode61'
+        );
+        """
+    )
+    return conn
+
+
+def upsert(conn, row):
+    conn.execute("DELETE FROM videos_fts WHERE id = ?", (row["id"],))
+    conn.execute("DELETE FROM videos WHERE id = ?", (row["id"],))
+    conn.execute(
+        """
+        INSERT INTO videos (
+          id, title, channel, url, uploaded_at, duration_s, description,
+          captions, lang, ingested_at, transcript
+        ) VALUES (
+          :id, :title, :channel, :url, :uploaded_at, :duration_s, :description,
+          :captions, :lang, :ingested_at, :transcript
+        )
+        """,
+        row,
+    )
+    conn.execute(
+        """
+        INSERT INTO videos_fts (id, title, channel, transcript)
+        VALUES (:id, :title, :channel, :transcript)
+        """,
+        row,
+    )
+    conn.commit()
+
+
+def delete_video(conn, video_id):
+    cur = conn.execute("DELETE FROM videos WHERE id = ?", (video_id,))
+    conn.execute("DELETE FROM videos_fts WHERE id = ?", (video_id,))
+    conn.commit()
+    return cur.rowcount > 0
+
+
+# ── youtube ──────────────────────────────────────────────────────────────────
+
+YT_ID_RE = re.compile(
+    r"(?:youtu\.be/|youtube\.com/(?:watch\?.*v=|embed/|shorts/|live/))([A-Za-z0-9_-]{11})"
+)
+
+
+def extract_id(url):
+    m = YT_ID_RE.search(url)
+    if m:
+        return m.group(1)
+    if re.fullmatch(r"[A-Za-z0-9_-]{11}", url.strip()):
+        return url.strip()
+    return None
+
+
+def require_yt_dlp():
+    from shutil import which
+
+    path = which("yt-dlp")
+    if not path:
+        die("yt-dlp not found. Install with: brew install yt-dlp")
+    return path
+
+
+def yt_dlp(args, timeout=180):
+    bin_path = require_yt_dlp()
+    try:
+        proc = subprocess.run(
+            [bin_path, *args],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        die("yt-dlp timed out")
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout or "").strip().splitlines()
+        tail = err[-1] if err else f"exit {proc.returncode}"
+        die(f"yt-dlp failed: {tail}")
+    return proc.stdout
+
+
+def fetch_video(url, lang, cookies_from_browser=None):
+    """One yt-dlp call: metadata JSON on stdout + caption files in tmpdir."""
+    with tempfile.TemporaryDirectory(prefix="ytmd-") as tmp:
+        outtmpl = str(Path(tmp) / "%(id)s")
+        args = [
+            "--skip-download",
+            "--no-playlist",
+            "--write-subs",
+            "--write-auto-subs",
+            "--sub-langs",
+            lang,
+            "--sub-format",
+            "json3/vtt",
+            "--no-warnings",
+            "--print-json",
+            "-o",
+            outtmpl,
+            url,
+        ]
+        if cookies_from_browser:
+            args.extend(["--cookies-from-browser", cookies_from_browser])
+        raw = yt_dlp(args)
+        try:
+            info = json.loads(raw)
+        except json.JSONDecodeError:
+            die("yt-dlp returned non-JSON metadata")
+        if info.get("_type") == "playlist":
+            die("playlist URLs are not supported; pass a single video URL")
+        caption_path, captions_kind, caption_lang = pick_caption_file(Path(tmp), info.get("id"))
+        if not caption_path:
+            die(
+                "no captions found for this video. "
+                "Try --lang all or --cookies-from-browser chrome"
+            )
+        cues = parse_captions(caption_path)
+        if not cues:
+            die(f"captions file was empty: {caption_path.name}")
+        return info, cues, captions_kind, caption_lang
+
+
+def pick_caption_file(tmpdir, video_id):
+    """Prefer manual json3, then manual vtt, then auto json3, then auto vtt."""
+    files = [p for p in tmpdir.iterdir() if p.is_file()]
+    if not files:
+        return None, None, None
+
+    def score(p: Path):
+        name = p.name.lower()
+        ext_rank = 0 if name.endswith(".json3") else 1 if name.endswith(".vtt") else 9
+        auto_rank = 1 if ".auto." in name or name.endswith(".auto.json3") else 0
+        # yt-dlp names auto subs like ID.en.vtt when only auto exists,
+        # and ID.en.vtt + ID.en.auto.vtt when both exist. Prefer non-auto.
+        return (auto_rank, ext_rank, len(name))
+
+    # ignore the dummy media placeholder if any
+    caption_files = [
+        p
+        for p in files
+        if p.suffix in {".json3", ".vtt", ".srt"}
+        or p.name.endswith(".json3")
+    ]
+    if not caption_files:
+        return None, None, None
+    best = sorted(caption_files, key=score)[0]
+    kind = "auto" if ".auto." in best.name.lower() else "manual"
+    # ID.en.json3 / ID.en-orig.json3 / ID.en.auto.json3
+    lang = best.name
+    if video_id and lang.startswith(video_id):
+        lang = lang[len(video_id) :].lstrip(".")
+    lang = re.sub(r"\.(json3|vtt|srt)$", "", lang, flags=re.I)
+    lang = lang.replace(".auto", "")
+    return best, kind, lang or None
+
+
+# ── caption parsing ──────────────────────────────────────────────────────────
+
+TS_RE = re.compile(
+    r"(?:(\d{2}):)?(\d{2}):(\d{2})\.(\d{3})\s*-->\s*(?:(\d{2}):)?(\d{2}):(\d{2})\.(\d{3})"
+)
+
+
+def _hms(h, m, s, ms):
+    return int(h or 0) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000.0
+
+
+def parse_captions(path: Path):
+    name = path.name.lower()
+    if name.endswith(".json3"):
+        return parse_json3(path.read_text(encoding="utf-8", errors="replace"))
+    return parse_vtt(path.read_text(encoding="utf-8", errors="replace"))
+
+
+def parse_json3(text):
+    data = json.loads(text)
+    cues = []
+    for ev in data.get("events") or []:
+        segs = ev.get("segs")
+        if not segs:
+            continue
+        body = "".join(s.get("utf8") or "" for s in segs)
+        body = clean_caption_text(body)
+        if not body:
+            continue
+        start_ms = ev.get("tStartMs") or 0
+        dur_ms = ev.get("dDurationMs") or 0
+        cues.append((start_ms / 1000.0, (start_ms + dur_ms) / 1000.0, body))
+    return dedupe_cues(cues)
+
+
+def parse_vtt(text):
+    # Drop header / styles. Cues are separated by blank lines.
+    body = text
+    if body.startswith("WEBVTT"):
+        body = body.split("\n", 1)[1] if "\n" in body else ""
+    chunks = re.split(r"\n\s*\n", body)
+    cues = []
+    for chunk in chunks:
+        lines = [
+            ln
+            for ln in chunk.splitlines()
+            if ln.strip() and not ln.strip().startswith("NOTE") and not ln.startswith("STYLE")
+        ]
+        if not lines:
+            continue
+        ts_line = None
+        ts_idx = 0
+        for i, ln in enumerate(lines):
+            if "-->" in ln:
+                ts_line, ts_idx = ln, i
+                break
+        if not ts_line:
+            continue
+        m = TS_RE.search(ts_line)
+        if not m:
+            continue
+        start = _hms(m.group(1), m.group(2), m.group(3), m.group(4))
+        end = _hms(m.group(5), m.group(6), m.group(7), m.group(8))
+        payload_lines = lines[ts_idx + 1 :]
+        # YouTube auto-VTT repeats the previous line; keep the last line.
+        payload = payload_lines[-1] if payload_lines else ""
+        payload = clean_caption_text(payload)
+        if payload:
+            cues.append((start, end, payload))
+    return dedupe_cues(cues)
+
+
+TAG_RE = re.compile(r"</?c[^>]*>|<[^>]+>")
+WS_RE = re.compile(r"\s+")
+
+
+def clean_caption_text(text):
+    text = text.replace("\xa0", " ").replace("\n", " ")
+    text = TAG_RE.sub("", text)
+    text = WS_RE.sub(" ", text).strip()
+    return text
+
+
+def dedupe_cues(cues):
+    out = []
+    prev = None
+    for start, end, text in cues:
+        if text == prev:
+            if out:
+                # extend previous cue's end time
+                ps, _, pt = out[-1]
+                out[-1] = (ps, end, pt)
+            continue
+        out.append((start, end, text))
+        prev = text
+    return out
+
+
+def format_ts(seconds):
+    s = max(0, int(seconds))
+    h, s = divmod(s, 3600)
+    m, s = divmod(s, 60)
+    if h:
+        return f"{h}:{m:02d}:{s:02d}"
+    return f"{m}:{s:02d}"
+
+
+def format_duration(seconds):
+    if seconds is None:
+        return ""
+    return format_ts(seconds)
+
+
+def cues_to_transcript(cues):
+    """Merge short cues into timestamped paragraphs."""
+    if not cues:
+        return ""
+    parts = []
+    buf = []
+    buf_start = cues[0][0]
+    last_end = cues[0][1]
+
+    def flush():
+        if not buf:
+            return
+        text = WS_RE.sub(" ", " ".join(buf)).strip()
+        if text:
+            parts.append(f"[{format_ts(buf_start)}] {text}")
+        buf.clear()
+
+    for start, end, text in cues:
+        gap = start - last_end
+        buf_len = sum(len(x) + 1 for x in buf)
+        if buf and (gap > 2.5 or buf_len + len(text) > 420):
+            flush()
+            buf_start = start
+        if not buf:
+            buf_start = start
+        buf.append(text)
+        last_end = max(last_end, end)
+    flush()
+    return "\n\n".join(parts)
+
+
+# ── markdown ─────────────────────────────────────────────────────────────────
+
+def slugify(title, video_id):
+    slug = title.lower()
+    slug = re.sub(r"[^a-z0-9]+", "-", slug).strip("-")
+    slug = slug[:60].rstrip("-") or "video"
+    return f"{video_id}-{slug}.md"
+
+
+def yaml_str(value):
+    if value is None:
+        return "null"
+    return json.dumps(value, ensure_ascii=False)
+
+
+def to_markdown(row):
+    uploaded = row.get("uploaded_at") or ""
+    duration = format_duration(row.get("duration_s"))
+    desc = (row.get("description") or "").strip()
+    if len(desc) > 2000:
+        desc = desc[:2000].rstrip() + "…"
+    lines = [
+        "---",
+        f"title: {yaml_str(row['title'])}",
+        f"video_id: {yaml_str(row['id'])}",
+        f"url: {yaml_str(row['url'])}",
+        f"channel: {yaml_str(row.get('channel'))}",
+        f"uploaded: {yaml_str(uploaded)}",
+        f"duration: {yaml_str(duration)}",
+        f"captions: {yaml_str(row.get('captions'))}",
+        f"lang: {yaml_str(row.get('lang'))}",
+        f"ingested: {yaml_str(row.get('ingested_at'))}",
+        "source: youtube",
+        "---",
+        "",
+        f"# {row['title']}",
+        "",
+        " · ".join(x for x in [row.get("channel"), uploaded, duration] if x),
+        "",
+        row["url"],
+        "",
+    ]
+    if desc:
+        lines += ["## Description", "", desc, ""]
+    lines += ["## Transcript", "", row["transcript"].rstrip(), ""]
+    return "\n".join(lines) + "\n"
+
+
+def md_path_for(row):
+    return DIR / slugify(row["title"], row["id"])
+
+
+def write_markdown(row):
+    ensure_dir()
+    # drop previous files for this video id
+    for old in DIR.glob(f"{row['id']}-*.md"):
+        old.unlink()
+    path = md_path_for(row)
+    path.write_text(to_markdown(row), encoding="utf-8")
+    return path
+
+
+def remove_markdown(video_id):
+    for old in DIR.glob(f"{video_id}-*.md"):
+        old.unlink()
+
+
+# ── commands ─────────────────────────────────────────────────────────────────
+
+def parse_upload_date(info):
+    raw = info.get("upload_date")  # YYYYMMDD
+    if raw and re.fullmatch(r"\d{8}", str(raw)):
+        s = str(raw)
+        return f"{s[0:4]}-{s[4:6]}-{s[6:8]}"
+    ts = info.get("timestamp") or info.get("release_timestamp")
+    if ts:
+        try:
+            return datetime.fromtimestamp(int(ts), tz=timezone.utc).date().isoformat()
+        except (ValueError, OSError, OverflowError):
+            return None
+    return None
+
+
+def cmd_add(url, lang, force, cookies_from_browser):
+    video_id = extract_id(url)
+    if not video_id and not url.startswith("http"):
+        die(f"not a YouTube URL: {url}")
+    conn = connect()
+    if video_id:
+        existing = conn.execute("SELECT title FROM videos WHERE id = ?", (video_id,)).fetchone()
+        if existing and not force:
+            die(
+                f"already ingested: {video_id}  ({existing['title']})\n"
+                f"       re-run with --force to replace",
+                code=2,
+            )
+    print(f"fetching {url} …", file=sys.stderr)
+    info, cues, kind, cap_lang = fetch_video(url, lang, cookies_from_browser)
+    transcript = cues_to_transcript(cues)
+    if not transcript.strip():
+        die("transcript was empty after parsing captions")
+    row = {
+        "id": info.get("id") or video_id,
+        "title": info.get("title") or "(untitled)",
+        "channel": info.get("channel") or info.get("uploader"),
+        "url": info.get("webpage_url") or info.get("original_url") or url,
+        "uploaded_at": parse_upload_date(info),
+        "duration_s": int(info["duration"]) if info.get("duration") is not None else None,
+        "description": info.get("description") or "",
+        "captions": kind,
+        "lang": cap_lang,
+        "ingested_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "transcript": transcript,
+    }
+    upsert(conn, row)
+    path = write_markdown(row)
+    words = len(transcript.split())
+    mins = format_duration(row["duration_s"]) or "?"
+    print(
+        f"saved {row['id']}  {row['title']}\n"
+        f"      {row.get('channel') or 'unknown'} · {mins} · {kind} captions · {words} words\n"
+        f"      {path}"
+    )
+
+
+def fts_match(conn, query, limit):
+    def run(q):
+        return conn.execute(
+            """
+            SELECT
+              v.id, v.title, v.channel, v.duration_s, v.url, v.uploaded_at, v.captions,
+              snippet(videos_fts, 3, '▸', '◂', '…', 40) AS snip,
+              bm25(videos_fts) AS score
+            FROM videos_fts
+            JOIN videos v ON v.id = videos_fts.id
+            WHERE videos_fts MATCH ?
+            ORDER BY score
+            LIMIT ?
+            """,
+            (q, limit),
+        ).fetchall()
+
+    try:
+        return run(query)
+    except sqlite3.OperationalError:
+        tokens = re.findall(r"[A-Za-z0-9_]+", query)
+        if not tokens:
+            die(f"empty search query")
+        safe = " AND ".join(f'"{t}"' for t in tokens)
+        try:
+            return run(safe)
+        except sqlite3.OperationalError as e:
+            die(f"bad search query: {e}")
+
+
+def cmd_search(query, limit, as_json):
+    conn = connect()
+    rows = fts_match(conn, query, limit)
+    if as_json:
+        print(json.dumps([dict(r) for r in rows], ensure_ascii=False, indent=2))
+        return
+    if not rows:
+        print("no matches")
+        return
+    print(f"{len(rows)} match{'es' if len(rows) != 1 else ''}\n")
+    for r in rows:
+        meta = " · ".join(
+            x
+            for x in [
+                r["channel"],
+                format_duration(r["duration_s"]),
+                r["uploaded_at"],
+            ]
+            if x
+        )
+        print(f"{r['id']}  {r['title']}")
+        if meta:
+            print(f"  {meta}")
+        snip = (r["snip"] or "").replace("\n", " ")
+        print(f"  {snip}\n")
+
+
+def resolve_video(conn, key):
+    row = conn.execute("SELECT * FROM videos WHERE id = ?", (key,)).fetchone()
+    if row:
+        return row
+    rows = conn.execute(
+        "SELECT * FROM videos WHERE id LIKE ? OR title LIKE ? COLLATE NOCASE ORDER BY ingested_at DESC",
+        (f"{key}%", f"%{key}%"),
+    ).fetchall()
+    if len(rows) == 1:
+        return rows[0]
+    if len(rows) > 1:
+        preview = "\n".join(f"  {r['id']}  {r['title']}" for r in rows[:10])
+        die(f"ambiguous, pick an id:\n{preview}")
+    return None
+
+
+def cmd_show(key, as_json):
+    conn = connect()
+    row = resolve_video(conn, key)
+    if not row:
+        die(f"not found: {key}")
+    data = dict(row)
+    if as_json:
+        print(json.dumps(data, ensure_ascii=False, indent=2))
+        return
+    sys.stdout.write(to_markdown(data))
+
+
+def cmd_list(as_json):
+    conn = connect()
+    rows = conn.execute(
+        "SELECT id, title, channel, duration_s, uploaded_at, captions, ingested_at FROM videos ORDER BY ingested_at DESC"
+    ).fetchall()
+    if as_json:
+        print(json.dumps([dict(r) for r in rows], ensure_ascii=False, indent=2))
+        return
+    if not rows:
+        print("library empty. ingest with: ytmd <youtube-url>")
+        return
+    for r in rows:
+        meta = " · ".join(
+            x
+            for x in [r["channel"], format_duration(r["duration_s"]), r["uploaded_at"]]
+            if x
+        )
+        print(f"{r['id']}  {r['title']}")
+        if meta:
+            print(f"  {meta}")
+
+
+def cmd_rm(key):
+    conn = connect()
+    row = resolve_video(conn, key)
+    if not row:
+        die(f"not found: {key}")
+    delete_video(conn, row["id"])
+    remove_markdown(row["id"])
+    print(f"removed {row['id']}  {row['title']}")
+
+
+def cmd_export(dest):
+    dest = Path(dest).expanduser() if dest else DIR
+    dest.mkdir(parents=True, exist_ok=True)
+    conn = connect()
+    rows = conn.execute("SELECT * FROM videos ORDER BY ingested_at").fetchall()
+    n = 0
+    for r in rows:
+        row = dict(r)
+        path = dest / slugify(row["title"], row["id"])
+        path.write_text(to_markdown(row), encoding="utf-8")
+        n += 1
+    print(f"exported {n} file{'s' if n != 1 else ''} → {dest}")
+
+
+def cmd_path():
+    print(DIR)
+
+
+# ── argv ─────────────────────────────────────────────────────────────────────
+
+def parse_flags(args):
+    flags = {
+        "lang": DEFAULT_LANG,
+        "force": False,
+        "json": False,
+        "n": 10,
+        "cookies_from_browser": os.environ.get("YTMD_COOKIES_FROM_BROWSER"),
+    }
+    positional = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("-h", "--help"):
+            usage()
+            sys.exit(0)
+        elif a == "--force":
+            flags["force"] = True
+        elif a == "--json":
+            flags["json"] = True
+        elif a in ("-n", "--limit") and i + 1 < len(args):
+            flags["n"] = int(args[i + 1])
+            i += 1
+        elif a == "--lang" and i + 1 < len(args):
+            flags["lang"] = args[i + 1]
+            i += 1
+        elif a == "--cookies-from-browser" and i + 1 < len(args):
+            flags["cookies_from_browser"] = args[i + 1]
+            i += 1
+        elif a.startswith("-"):
+            die(f"unknown flag: {a}")
+        else:
+            positional.append(a)
+        i += 1
+    return positional, flags
+
+
+def looks_like_url(s):
+    return s.startswith("http://") or s.startswith("https://") or extract_id(s) is not None
+
+
+def main(argv):
+    if not argv or argv[0] in ("help", "-h", "--help"):
+        usage()
+        return
+    cmd = argv[0]
+    rest = argv[1:]
+
+    # Bare URL / video id → add
+    if looks_like_url(cmd) and cmd not in {
+        "add",
+        "search",
+        "show",
+        "list",
+        "rm",
+        "export",
+        "path",
+        "help",
+    }:
+        rest = [cmd, *rest]
+        cmd = "add"
+
+    positional, flags = parse_flags(rest)
+
+    if cmd == "add":
+        if not positional:
+            die("add: url required")
+        cmd_add(positional[0], flags["lang"], flags["force"], flags["cookies_from_browser"])
+    elif cmd == "search":
+        if not positional:
+            die("search: query required")
+        cmd_search(" ".join(positional), flags["n"], flags["json"])
+    elif cmd == "show":
+        if not positional:
+            die("show: id or title required")
+        cmd_show(positional[0], flags["json"])
+    elif cmd == "list":
+        cmd_list(flags["json"])
+    elif cmd == "rm":
+        if not positional:
+            die("rm: id required")
+        cmd_rm(positional[0])
+    elif cmd == "export":
+        cmd_export(positional[0] if positional else None)
+    elif cmd == "path":
+        cmd_path()
+    else:
+        die(f"unknown command: {cmd}\n       try: ytmd help")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
