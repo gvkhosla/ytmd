@@ -72,9 +72,9 @@
               <div class="code-panel">
                 <div class="code-heading"><a href="https://brew.sh/">Need Homebrew?</a><button class="copy-button" type="button" data-copy="install-code" data-message="macOS install commands copied." hidden>Copy commands</button></div>
                 <pre tabindex="0" aria-label="macOS install commands"><code id="install-code">brew install python yt-dlp
+export PATH="$HOME/.local/bin:$PATH"
 curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
-export PATH="$HOME/.local/bin:$PATH"
 ytmd doctor</code></pre>
               </div>
             </details>
@@ -84,9 +84,9 @@ ytmd doctor</code></pre>
                 <p class="small prerequisite">First install Python 3.9+ with SQLite FTS5 and pipx using your package manager.</p>
                 <div class="code-heading"><span>Then run</span><button class="copy-button" type="button" data-copy="linux-code" data-message="Linux install commands copied." hidden>Copy commands</button></div>
                 <pre tabindex="0" aria-label="Linux install commands"><code id="linux-code">pipx install yt-dlp
+export PATH="$HOME/.local/bin:$PATH"
 curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
-export PATH="$HOME/.local/bin:$PATH"
 ytmd doctor</code></pre>
               </div>
             </details>

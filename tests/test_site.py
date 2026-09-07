@@ -93,6 +93,8 @@ class LandingPage(unittest.TestCase):
         self.assertIn(f"/v{version}/install.sh", commands)
         self.assertIn("--agent all", commands)
         self.assertNotIn("sudo", commands)
+        # Fresh pipx installs may not yet be on PATH when the installer checks yt-dlp.
+        self.assertLess(commands.index('export PATH='), commands.index('sh /tmp/install-ytmd.sh'))
 
     def test_agent_guide_is_static_and_versioned(self):
         text = (SITE / "llms.txt").read_text()

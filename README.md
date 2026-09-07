@@ -26,9 +26,9 @@ install the CLI and skill for my agent. Verify with ytmd doctor.
 
 ```bash
 brew install python yt-dlp
+export PATH="$HOME/.local/bin:$PATH"
 curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
-export PATH="$HOME/.local/bin:$PATH"
 ytmd doctor
 ```
 
@@ -36,9 +36,9 @@ ytmd doctor
 
 ```bash
 pipx install yt-dlp
+export PATH="$HOME/.local/bin:$PATH"
 curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
-export PATH="$HOME/.local/bin:$PATH"
 ytmd doctor
 ```
 

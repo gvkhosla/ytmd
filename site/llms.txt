@@ -18,9 +18,9 @@ Ask before installing dependencies or editing shell profiles.
 Download and inspect the installer before running it:
 
 ```sh
+export PATH="$HOME/.local/bin:$PATH"
 curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
-export PATH="$HOME/.local/bin:$PATH"
 ytmd doctor --json
 ```
 
