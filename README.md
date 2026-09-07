@@ -1,6 +1,10 @@
 # ytmd
 
-**Save a YouTube video's captions. Search them from your coding agent.**
+**Watch it once. Build with it.**
+
+Turn YouTube captions into local, searchable transcripts your coding agent can use.
+
+**[Website & quick start](https://gvkhosla.github.io/ytmd/)** · [Latest release](https://github.com/gvkhosla/ytmd/releases/latest) · [Agent skill](SKILL.md)
 
 ```text
 YouTube URL → timestamped transcript → SQLite + readable markdown
@@ -8,40 +12,68 @@ YouTube URL → timestamped transcript → SQLite + readable markdown
 
 One Python script. No server, API key, model download, or runtime Python packages.
 Your library stays on your machine; fetching captions contacts YouTube through yt-dlp.
+Works from **Pi, Codex, Claude Code, or your terminal**. Videos need available captions.
+
+## Let your coding agent set it up
+
+Paste this into your coding agent:
+
+```text
+Install ytmd from https://github.com/gvkhosla/ytmd. Read the README and
+installer first, check my dependencies, and ask before making system
+changes. Install the CLI and skill for my agent, then verify with ytmd doctor.
+```
+
+Or install it yourself below.
 
 ## Install
 
 Requires **Python 3.9+ with SQLite FTS5** and [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+You can [read the installer](https://github.com/gvkhosla/ytmd/blob/v0.2.0/install.sh) before running it.
+
+### macOS
+
+With [Homebrew](https://brew.sh/) installed:
 
 ```bash
-# macOS
 brew install python yt-dlp
-
-# Linux: install Python and pipx using your package manager, then:
-# pipx install yt-dlp
-```
-
-Download and run the installer (read it first if you like):
-
-```bash
 curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.2.0/install.sh -o /tmp/install-ytmd.sh
-sh /tmp/install-ytmd.sh
+sh /tmp/install-ytmd.sh --agent all
+export PATH="$HOME/.local/bin:$PATH"
+ytmd doctor
 ```
 
-This installs the CLI into `~/.local/bin` and the skill into `~/.agents/skills/ytmd`
-for Pi/Codex. For Claude Code, run with `--agent claude`; for both, `--agent all`.
-Use `--agent none` for just the CLI. It checks dependencies and release checksums,
-never uses sudo, and never changes your shell profile.
+### Linux
 
-If needed, add this to your shell profile and restart your terminal:
+First install Python (including SQLite FTS5) and pipx using your distribution's
+package manager. Then:
 
 ```bash
+pipx install yt-dlp
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.2.0/install.sh -o /tmp/install-ytmd.sh
+sh /tmp/install-ytmd.sh --agent all
 export PATH="$HOME/.local/bin:$PATH"
+ytmd doctor
 ```
 
-Then restart your coding agent and ask:
+These commands install the CLI into `~/.local/bin` and skills for Pi/Codex
+(`~/.agents/skills/ytmd`) and Claude Code (`~/.claude/skills/ytmd`).
+Use `--agent pi`, `--agent codex`, or `--agent claude` for just your agent,
+or `--agent none` for CLI only. The installer checks dependencies and release
+checksums, never uses sudo, and never changes your shell profile.
+
+The `export PATH=…` command applies to the current terminal. If `~/.local/bin` isn't
+already on your PATH, add that line to your shell profile too.
+
+### Your first video
+
+Restart your coding agent to discover the skill. Then paste a YouTube URL and ask:
 
 > Save this YouTube video and apply the relevant ideas to this repository: URL
+
+The agent can save captions, search relevant passages, and read timestamped windows
+instead of loading an entire video into context. It does not automatically summarize
+or modify your repository without a task from you.
 
 ## Three commands you'll actually use
 
@@ -153,5 +185,19 @@ python3 -m unittest discover -s tests -v
 
 Tests use isolated temporary libraries and mocked YouTube responses. CI runs on macOS
 and Linux; live ingestion is a separate smoke test because YouTube can rate-limit CI.
+
+### Landing page
+
+The shareable site is plain HTML/CSS/JS in [`site/`](site/), with self-hosted fonts
+and no analytics, third-party scripts, or build step. Preview it locally:
+
+```bash
+python3 -m http.server 8000 --directory site
+```
+
+Open `http://localhost:8000`. `.github/workflows/pages.yml` publishes `site/` to
+[GitHub Pages](https://gvkhosla.github.io/ytmd/) when site files change on `main`.
+The CLI stays independently versioned; the website's installer points to the tested
+`v0.2.0` release, not an untagged development script.
 
 MIT licensed. [Release notes](CHANGELOG.md).
