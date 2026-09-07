@@ -1,0 +1,29 @@
+name: Test
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ['3.9', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python3 -m unittest discover -s tests -v
+      - run: sh -n install.sh
+      - name: Verify release payload checksums
+        run: |
+          python3 - <<'PY'
+          import hashlib, pathlib
+          for line in pathlib.Path('SHA256SUMS').read_text().splitlines():
+              digest, name = line.split()
+              assert hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest() == digest, name
+          PY
