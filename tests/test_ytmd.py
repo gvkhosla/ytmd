@@ -138,7 +138,9 @@ class StorageAndCLI(Isolated):
         self.assertTrue((root / "ytmd.pre-v0.2.db").exists())
         self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 1)
         self.assertIn("approximate", y.markdown(migrated))
-        self.assertEqual(self.cli("search", "invalidation", "--json").returncode, 0)
+        found = self.cli("search", "invalidation", "--json")
+        self.assertEqual(found.returncode, 0)
+        self.assertEqual(json.loads(found.stdout)[0]["caption_format"], "legacy")
         self.assertEqual(self.db().execute("SELECT count(*) FROM videos").fetchone()[0], 1)
 
     def test_newer_schema_rejected(self):
@@ -156,6 +158,8 @@ class StorageAndCLI(Isolated):
         self.assertEqual(len(data), 2)
         self.assertEqual({r["start"] for r in data}, {60, 120})
         self.assertIn("&t=", data[0]["url"])
+        self.assertEqual(data[0]["captions"], "manual")
+        self.assertEqual(data[0]["caption_format"], "json3")
 
     def test_update_and_delete_fts(self):
         conn = self.seed()

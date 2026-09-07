@@ -403,7 +403,7 @@ def cmd_search(args):
     query = " AND ".join('"' + t + '"' for t in tokens)
     with closing(connect()) as conn:
         key = resolve(conn, args.video)["id"] if args.video else None
-        rows = conn.execute("""SELECT v.id AS video_id,v.title,p.start,p.end,p.text,
+        rows = conn.execute("""SELECT v.id AS video_id,v.title,v.captions,v.lang,v.caption_format,p.start,p.end,p.text,
             bm25(passages_fts) AS score FROM passages_fts
             JOIN passages p ON p.id=passages_fts.rowid JOIN videos v ON v.id=p.video_id
             WHERE passages_fts MATCH ? AND (? IS NULL OR v.id=?)
