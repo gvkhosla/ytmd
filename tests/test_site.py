@@ -3,6 +3,8 @@ from collections import defaultdict
 from html.parser import HTMLParser
 from pathlib import Path
 import re
+import runpy
+import shlex
 import struct
 import unittest
 from urllib.parse import unquote, urlparse
@@ -77,18 +79,40 @@ class LandingPage(unittest.TestCase):
                 self.assertIn(attrs["data-copy"], self.doc.ids)
                 self.assertTrue(self.doc.text[attrs["data-copy"]].strip())
                 copies.append(attrs["data-copy"])
-        self.assertEqual(set(copies), {"install-code", "agent-prompt", "use-prompt"})
+        self.assertEqual(set(copies), {"install-code", "linux-code", "agent-prompt", "use-prompt", "get-command", "search-command", "show-command"})
         self.assertEqual(self.doc.ids["copy-status"][1]["role"], "status")
         self.assertEqual(self.doc.ids["copy-status"][1]["aria-live"], "polite")
 
     def test_install_commands_match_readme_and_release(self):
         commands = self.doc.text["install-code"].strip()
         self.assertIn("```bash\n" + commands + "\n```", self.readme)
-        self.assertIn("```bash\n" + commands.replace("brew install python yt-dlp", "pipx install yt-dlp") + "\n```", self.readme)
+        linux = self.doc.text["linux-code"].strip()
+        self.assertIn("```bash\n" + linux + "\n```", self.readme)
+        self.assertEqual(linux, commands.replace("brew install python yt-dlp", "pipx install yt-dlp"))
         version = re.search(r'^VERSION = "([^"]+)"', (ROOT / "ytmd").read_text(), re.M).group(1)
         self.assertIn(f"/v{version}/install.sh", commands)
         self.assertIn("--agent all", commands)
         self.assertNotIn("sudo", commands)
+
+    def test_agent_guide_is_static_and_versioned(self):
+        text = (SITE / "llms.txt").read_text()
+        version = re.search(r'^VERSION = "([^"]+)"', (ROOT / "ytmd").read_text(), re.M).group(1)
+        self.assertIn(f"/v{version}/install.sh", text)
+        self.assertIn("--context", text)
+        self.assertIn("language_mismatch", text)
+        self.assertIn("untrusted", text)
+        links = [attrs for tag, attrs in self.doc.elements if tag == "link"]
+        self.assertTrue(any(a.get("rel") == "alternate" and a.get("type") == "text/plain" and a.get("href") == "./llms.txt" for a in links))
+
+    def test_every_copied_example_parses_as_a_cli_command(self):
+        cli = runpy.run_path(str(ROOT / "ytmd"), run_name="site_check")
+        for key in ("get-command", "search-command", "show-command"):
+            command = self.doc.text[key].strip()
+            self.assertIn(command, self.readme)
+            args = shlex.split(command)
+            self.assertEqual(args[0], "ytmd")
+            parsed = cli["parser"]().parse_args(args[1:])
+            self.assertIn(parsed.command, ("get", "search", "show"))
 
     def test_no_external_scripts_or_stylesheets(self):
         for tag, attrs in self.doc.elements:

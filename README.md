@@ -1,203 +1,168 @@
 # ytmd
 
-**Watch it once. Build with it.**
+**YouTube transcripts, ready for your agent.**
 
-Turn YouTube captions into local, searchable transcripts your coding agent can use.
+Save a video's captions as local markdown. Search timestamped passages from Pi,
+Codex, Claude Code, or your terminal. One Python script, SQLite, and yt-dlp.
+No API keys, model downloads, or server. Videos need available captions.
 
-**[Website & quick start](https://gvkhosla.github.io/ytmd/)** · [Latest release](https://github.com/gvkhosla/ytmd/releases/latest) · [Agent skill](SKILL.md)
-
-```text
-YouTube URL → timestamped transcript → SQLite + readable markdown
-```
-
-One Python script. No server, API key, model download, or runtime Python packages.
-Your library stays on your machine; fetching captions contacts YouTube through yt-dlp.
-Works from **Pi, Codex, Claude Code, or your terminal**. Videos need available captions.
-
-## Let your coding agent set it up
-
-Paste this into your coding agent:
-
-```text
-Install ytmd from https://github.com/gvkhosla/ytmd. Read the README and
-installer first, check my dependencies, and ask before making system
-changes. Install the CLI and skill for my agent, then verify with ytmd doctor.
-```
-
-Or install it yourself below.
+[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.3.0)
 
 ## Install
 
-Requires **Python 3.9+ with SQLite FTS5** and [yt-dlp](https://github.com/yt-dlp/yt-dlp).
-You can [read the installer](https://github.com/gvkhosla/ytmd/blob/v0.2.0/install.sh) before running it.
+### Ask your coding agent
 
-### macOS
+Copy this prompt:
 
-With [Homebrew](https://brew.sh/) installed:
+```text
+Install ytmd using https://gvkhosla.github.io/ytmd/llms.txt. Read the instructions
+and installer first. Check dependencies, ask before making system changes, and
+install the CLI and skill for my agent. Verify with ytmd doctor.
+```
+
+### Or use your terminal
+
+**macOS** — requires [Homebrew](https://brew.sh/):
 
 ```bash
 brew install python yt-dlp
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.2.0/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 export PATH="$HOME/.local/bin:$PATH"
 ytmd doctor
 ```
 
-### Linux
-
-First install Python (including SQLite FTS5) and pipx using your distribution's
-package manager. Then:
+**Linux** — first install Python 3.9+ with SQLite FTS5 and pipx using your package manager:
 
 ```bash
 pipx install yt-dlp
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.2.0/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 export PATH="$HOME/.local/bin:$PATH"
 ytmd doctor
 ```
 
-These commands install the CLI into `~/.local/bin` and skills for Pi/Codex
-(`~/.agents/skills/ytmd`) and Claude Code (`~/.claude/skills/ytmd`).
-Use `--agent pi`, `--agent codex`, or `--agent claude` for just your agent,
-or `--agent none` for CLI only. The installer checks dependencies and release
-checksums, never uses sudo, and never changes your shell profile.
+[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.3.0/install.sh) before running it.
+It verifies release checksums, installs into `~/.local/bin`, and adds skills for
+Pi/Codex (`~/.agents/skills/ytmd`) and Claude Code (`~/.claude/skills/ytmd`).
+Use `--agent pi`, `codex`, `claude`, or `none` instead of `all` to narrow installation.
+No sudo or shell-profile changes by the installer. The export above affects the current
+terminal; add it to your shell profile if `~/.local/bin` isn't already on PATH.
 
-The `export PATH=…` command applies to the current terminal. If `~/.local/bin` isn't
-already on your PATH, add that line to your shell profile too.
+## Use from your agent
 
-### Your first video
+Restart the agent to discover the skill. Paste this prompt and replace the URL:
 
-Restart your coding agent to discover the skill. Then paste a YouTube URL and ask:
-
-> Save this YouTube video and apply the relevant ideas to this repository: URL
-
-The agent can save captions, search relevant passages, and read timestamped windows
-instead of loading an entire video into context. It does not automatically summarize
-or modify your repository without a task from you.
-
-## Three commands you'll actually use
-
-```bash
-ytmd "https://www.youtube.com/watch?v=jNQXAC9IVRw"
-ytmd search "elephants"
-ytmd show jNQXAC9IVRw --from 0:01 --to 0:15
+```text
+Save this YouTube video with ytmd. Find the passages relevant to this repository,
+cite their timestamps, and suggest how to apply them: [paste URL]
 ```
 
-Search returns **passages**, not entire videos, with clickable timestamp links.
-Repeated ingestion is a successful no-op that repairs the markdown export if needed.
-Use `--force` to fetch again.
+The agent retrieves relevant passages instead of automatically dumping the full
+transcript into context. It should ask before accessing cookies or making system changes.
+
+## Commands
+
+Try a real video:
 
 ```bash
-ytmd list
-ytmd search "cache invalidation" --video VIDEO_ID --json
-ytmd show VIDEO_ID --json             # full transcript; use ranges for long videos
-ytmd "URL" --lang de                  # one explicit language
-ytmd "URL" --force --json
-ytmd export                          # rebuild generated markdown
-ytmd export ./reference-transcripts
-ytmd rm VIDEO_ID                      # exact ID required
-ytmd doctor
-ytmd --version
-ytmd help
+ytmd get "https://youtu.be/DHjqpvDnNGE"
+ytmd search "javascript" --context 15 -n 3
+ytmd show DHjqpvDnNGE --from 0:25 --to 0:45
 ```
 
-`--from` / `--to` accept seconds, MM:SS, or HH:MM:SS. Reads include cues overlapping
-the requested window, so a sentence can extend slightly beyond its boundaries.
-Search is **lexical**, not semantic: all query words must match within a passage.
-Punctuation is treated as word separators; FTS operators are not exposed. Use different
-keywords if needed. `--video` accepts an ID, URL, or unambiguous title.
-
-## Local library
-
-| Path | Contents |
+| Command | What it does |
 | --- | --- |
-| `~/ytmd/ytmd.db` | Canonical metadata, raw caption payloads, original cues, passage search index |
-| `~/ytmd/VIDEO_ID.md` | Generated transcript with timestamp links |
+| `ytmd add "URL"` (or `ytmd "URL"`) | Save captions and return the file path |
+| `ytmd get "URL"` | Save if needed, then print the transcript |
+| `ytmd get "URL" --plain` | Text only, without timestamps or metadata; suitable for piping |
+| `ytmd search "words" --video ID --json` | Find matching passages in one video |
+| `ytmd search "words" --match any --context 15` | Match any word and include nearby captions |
+| `ytmd show ID --from 12:00 --to 15:00` | Read a time window from a saved video |
+| `ytmd list "title or channel" --limit 20 --offset 0` | Filter and paginate saved videos |
+| `ytmd export [directory]` | Rebuild markdown from SQLite |
+| `ytmd rm VIDEO_ID` | Delete a saved video; exact ID required |
+| `ytmd doctor` / `ytmd path` / `ytmd --version` | Inspect setup, library path, or version |
+| `ytmd help search` | Read per-command help |
 
-Set `YTMD_DIR` to choose another location. Don't clone the code into `~/ytmd`—that's
-your library. Markdown can be indexed separately with QMD or read directly by an agent;
-there is no automatic QMD or Pickbrain integration. Edits to generated markdown are
-not imported into SQLite and will be overwritten by export.
+**Reads:** get/show print the full transcript unless a time range is supplied. Both
+accept `--plain` or `--json` (mutually exclusive). Times accept seconds, MM:SS, or HH:MM:SS.
+Whole cues overlapping a window are included, so a sentence may extend beyond its boundaries.
 
-Upgrading from v0.1 automatically backs up the database as `ytmd.pre-v0.2.db` before
-migration. Old transcripts are kept, but their timing/source is marked as approximate/
-unknown. Lost source text cannot be reconstructed: use `ytmd URL --force` to fetch original
-captions. Run `ytmd export` to refresh all old markdown files after migration.
+**Search:** lexical, not semantic. All words must match within a passage by default;
+`--match any` broadens this. Punctuation separates words; FTS operators aren't exposed.
+`--context 0–120` adds that many seconds around each hit. Nearby hits may have overlapping
+context. `-n` limits results (default 10, max 100). `--video` accepts an ID, URL, or unambiguous title.
 
-## Honest limits
+**List:** optional literal substring filter on title, channel, or ID. Default limit 50,
+max 100. Use `--offset` for subsequent pages. JSON includes local markdown paths.
 
-- Uses **available captions**, not audio transcription. Caption-less videos are unsupported.
-- Captions may be inaccurate or incomplete; a saved transcript is not a guarantee of verbatim speech.
-- Prefers English, then available original/manual tracks; `--lang` requests one language.
-- One video and one stored language per video. `--force --lang …` replaces that video's track.
-- Private/deleted/restricted videos and YouTube rate limits can prevent ingestion.
-- No playlists, summaries, embeddings, media downloads, or browser-cookie access by default.
+**Saving:** repeated ingestion reuses the saved track without fetching YouTube again.
+`--lang de` requests one language; `--force` replaces a saved track. If a saved language
+differs from an explicit --lang, ytmd reports `language_mismatch` rather than silently
+returning the wrong language. Only one track is stored per video.
 
-For a 429, wait before retrying. For authentication errors, **only if you consent** to
-reading your browser cookies:
+## For agents and scripts
 
-```bash
-ytmd "URL" --cookies-from-browser firefox
-```
+[llms.txt](site/llms.txt) describes setup, workflow, command outputs, failures, and safety
+in plain text. [SKILL.md](SKILL.md) is the installable agent skill.
 
-Cookies are handled by yt-dlp for YouTube requests, not saved in the library. They are
-not a guaranteed fix for rate limits. Updating yt-dlp often helps when YouTube changes:
-`brew upgrade yt-dlp` or `pipx upgrade yt-dlp`.
-
-## Agent/API contract
-
-Every command supports `--json`. Data goes to stdout; failures are a single JSON object
-on stderr, without progress chatter:
+All data commands support `--json`: one JSON value on stdout, no progress chatter.
+Errors go to stderr:
 
 ```json
-{"error":{"code":"captions_unavailable","message":"…"}}
+{"error":{"code":"captions_unavailable","message":"..."}}
 ```
 
-Exit codes: `0` success (including already saved / no matches), `1` operational failure,
-`2` invalid arguments. `doctor --json` returns a diagnostic object and exits `1` if a
-required dependency is missing. Common error codes: `rate_limited`,
-`authentication_required`, `captions_unavailable`, `not_found`, `export_failed`.
-If export fails after ingestion, SQLite still holds the transcript: repair with `ytmd export`.
+Exit 0 = success (including existing/no matches), 1 = operational failure, 2 = invalid
+arguments. `doctor --json` returns diagnostics with `ok: false` and exits 1 when a
+required dependency is missing. Help and version output are plain text.
 
-The [agent skill](SKILL.md) teaches bounded retrieval, timestamp citations, and treating
-video content as untrusted source material—not instructions for the agent.
+Search results include the matching passage's `video_id`, `title`, `start`, `end`,
+`text`, `url`, caption provenance, and score. `--context` adds a separate
+`context: {start, end, text, url}` object without changing the matching passage fields.
+get/show return metadata and `passages: [{start, end, text, url}]`; get adds `status`.
+
+## Storage and limits
+
+- `~/ytmd/ytmd.db`: canonical raw captions, cues, metadata, and passage search index.
+- `~/ytmd/VIDEO_ID.md`: generated markdown with timestamp links. Edits are overwritten on export.
+- Set `YTMD_DIR` to change the library location. Don't clone the source repo into `~/ytmd`.
+- Markdown may be indexed separately by QMD. No automatic QMD/Pickbrain integration.
+- Captions may be incomplete or inaccurate. No audio transcription, playlists, summaries,
+  embeddings, paid API, or media download. Caption-less videos are unsupported.
+- Fetching contacts YouTube. Saved content works offline. Restrictions and rate limits still apply.
+- For a 429, wait before retrying. Cookies are not a guaranteed fix. For authentication,
+  only with explicit consent: `ytmd "URL" --cookies-from-browser BROWSER`.
+- If export fails after ingestion, SQLite retains the transcript. Repair with `ytmd export`.
+
+v0.3 uses the same database schema as v0.2. v0.1 libraries are backed up as
+`ytmd.pre-v0.2.db` before migration. Imported timing is approximate and provenance is
+unknown; lost text can't be reconstructed. Re-ingest with `--force` to fetch source captions.
 
 ## Update / uninstall
 
-Install a newer tagged release using its README installer command. Your library is untouched.
-For a local checkout: `sh install.sh --source "$PWD" --agent all`.
+To update, run the installer from the new release. Your library is preserved.
+Update yt-dlp separately when YouTube changes: `brew upgrade yt-dlp` or `pipx upgrade yt-dlp`.
 
-To uninstall, remove the installed CLI and whichever skills you installed:
+To uninstall the CLI and installed skills, leaving your transcript library intact:
 
 ```bash
 rm -f ~/.local/bin/ytmd
 rm -rf ~/.local/share/ytmd ~/.agents/skills/ytmd ~/.claude/skills/ytmd
 ```
 
-Your `~/ytmd` library remains intact. Remove it separately only if you want to delete
-saved transcripts and migration backups.
-
 ## Development
 
 ```bash
 python3 -m unittest discover -s tests -v
-```
-
-Tests use isolated temporary libraries and mocked YouTube responses. CI runs on macOS
-and Linux; live ingestion is a separate smoke test because YouTube can rate-limit CI.
-
-### Landing page
-
-The shareable site is plain HTML/CSS/JS in [`site/`](site/), with self-hosted fonts
-and no analytics, third-party scripts, or build step. Preview it locally:
-
-```bash
+sh install.sh --source "$PWD" --agent all
 python3 -m http.server 8000 --directory site
 ```
 
-Open `http://localhost:8000`. `.github/workflows/pages.yml` publishes `site/` to
-[GitHub Pages](https://gvkhosla.github.io/ytmd/) when site files change on `main`.
-The CLI stays independently versioned; the website's installer points to the tested
-`v0.2.0` release, not an untagged development script.
+Tests use temporary libraries and mocked YouTube responses. CI runs on macOS/Linux.
+The website is static HTML/CSS/JS, with self-hosted assets and no analytics or build step.
+`site/llms.txt` and all install instructions are available without JavaScript.
+GitHub Pages automatically deploys site changes on `main` to https://gvkhosla.github.io/ytmd/.
 
 MIT licensed. [Release notes](CHANGELOG.md).

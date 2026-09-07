@@ -4,20 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f8f9f5">
-  <title>ytmd — Watch it once. Build with it.</title>
-  <meta name="description" content="Turn YouTube captions into local, searchable transcripts for your coding agent. One lightweight CLI. SQLite, markdown, and no API keys.">
+  <title>ytmd — YouTube transcripts, ready for your agent</title>
+  <meta name="description" content="Save YouTube captions as local markdown. Search timestamped passages from your coding agent or terminal. Copy the install commands and get started.">
   <link rel="canonical" href="https://gvkhosla.github.io/ytmd/">
+  <link rel="alternate" type="text/plain" title="Agent instructions" href="./llms.txt">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="ytmd — Watch it once. Build with it.">
-  <meta property="og:description" content="YouTube captions → local transcripts → useful context for your coding agent. Open source. No API keys.">
+  <meta property="og:title" content="ytmd — YouTube transcripts, ready for your agent">
+  <meta property="og:description" content="Save captions. Search passages. Use what you learn. A local CLI for Pi, Codex, Claude Code, and your terminal.">
   <meta property="og:url" content="https://gvkhosla.github.io/ytmd/">
   <meta property="og:image" content="https://gvkhosla.github.io/ytmd/assets/social.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ytmd. Watch it once. Build with it. YouTube to local transcripts for your coding agent.">
+  <meta property="og:image:alt" content="ytmd — YouTube transcripts, ready for your agent. Markdown and SQLite. Local files, no API keys.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="ytmd — Watch it once. Build with it.">
-  <meta name="twitter:description" content="YouTube captions. Local transcripts. Useful context for your coding agent.">
+  <meta name="twitter:title" content="ytmd — YouTube transcripts, ready for your agent">
+  <meta name="twitter:description" content="YouTube captions to local markdown and searchable passages. One small CLI.">
   <meta name="twitter:image" content="https://gvkhosla.github.io/ytmd/assets/social.png">
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
   <link rel="preload" href="./assets/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
@@ -29,150 +30,100 @@
   <header class="site-header">
     <div class="container header-inner">
       <a class="brand" href="./" aria-label="Homepage"><img src="./assets/wordmark.svg" width="104" height="32" alt="ytmd"></a>
-      <nav class="desktop-nav" aria-label="Main navigation">
-        <a href="#how-it-works">How it works</a>
-        <a href="#install">Install</a>
-        <a href="https://github.com/gvkhosla/ytmd">GitHub</a>
-      </nav>
-      <details class="mobile-menu">
-        <summary>Menu</summary>
-        <nav aria-label="Mobile navigation">
-          <a href="#how-it-works">How it works</a>
-          <a href="#install">Install</a>
-          <a href="https://github.com/gvkhosla/ytmd">GitHub</a>
-        </nav>
-      </details>
+      <nav class="desktop-nav" aria-label="Main navigation"><a href="#install">Install</a><a href="#use">Use</a><a href="./llms.txt">For agents</a><a href="https://github.com/gvkhosla/ytmd">GitHub ↗</a></nav>
+      <details class="mobile-menu"><summary>Menu</summary><nav aria-label="Mobile navigation"><a href="#install">Install</a><a href="#use">Use</a><a href="./llms.txt">For agents</a><a href="https://github.com/gvkhosla/ytmd">GitHub ↗</a></nav></details>
     </div>
   </header>
-
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
       <div class="container hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow">Open source / Local first</p>
-          <h1 id="hero-title">Watch it once.<br>Build with it.</h1>
-          <p class="hero-description">Turn YouTube captions into local, searchable transcripts your coding agent can actually use.</p>
-          <div class="hero-actions">
-            <a class="button primary" href="#install">Get ytmd <span aria-hidden="true">↗</span></a>
-            <a class="text-link" href="https://github.com/gvkhosla/ytmd">View the source <span aria-hidden="true">↗</span></a>
-          </div>
-          <p class="quiet hero-note">No API keys. No model downloads. Just your files.</p>
+        <div>
+          <p class="eyebrow">A small, open-source CLI · v0.3.0</p>
+          <h1 id="hero-title">YouTube transcripts,<br>ready for your agent</h1>
+          <p class="hero-description">Save a video’s captions as markdown. Search timestamped passages from your coding agent or terminal.</p>
+          <p class="hero-note">Local files. No API keys. No model downloads.</p>
+          <div class="hero-links"><a href="#install">Install ytmd ↓</a><a href="./llms.txt">Read the agent guide ↗</a></div>
         </div>
-
-        <div class="example" aria-label="Example: a video becomes searchable local knowledge">
-          <div class="example-header"><span class="eyebrow">From video to context</span><span class="mono">.md + .db</span></div>
-          <div class="source-row">
-            <p class="step-label">01 / Save a video</p>
-            <pre class="command"><code><span class="prompt">$</span> ytmd "https://youtu.be/DHjqpvDnNGE"</code></pre>
-            <p class="saved">saved: JavaScript in 100 Seconds</p>
-          </div>
-          <div class="passage-row">
-            <p class="step-label">02 / Find the useful bit</p>
-            <pre class="command"><code><span class="prompt">$</span> ytmd search "javascript"</code></pre>
-            <blockquote>
-              <p>“Anything that can be built with JavaScript will be built with JavaScript…”</p>
-              <footer><a href="https://www.youtube.com/watch?v=DHjqpvDnNGE&t=25s">Fireship · 0:25 <span aria-hidden="true">↗</span></a></footer>
-            </blockquote>
-          </div>
-          <div class="context-row">
-            <p class="step-label">03 / Bring it to your agent</p>
-            <p>“Use this video to help me choose a JavaScript stack for this repo.”</p>
-          </div>
-          <div class="example-footer"><span class="mono">~/ytmd/</span><span>Saved locally. Ready when you are.</span></div>
-        </div>
+        <aside class="file-preview" aria-label="Where your transcripts are stored">
+          <div class="preview-heading"><p class="eyebrow">Your library</p><p class="mono">~/ytmd/</p></div>
+          <div class="file-entry"><p class="file-name">DHjqpvDnNGE.md</p><p>The transcript, with links to the video’s timestamps.</p></div>
+          <div class="file-entry"><p class="file-name">ytmd.db</p><p>Original captions, metadata, and a SQLite search index.</p></div>
+          <p class="preview-note">Your agent can read the files directly. Or use the CLI to retrieve just the passage it needs.</p>
+        </aside>
       </div>
     </section>
 
-    <section class="workflow" id="how-it-works" aria-labelledby="workflow-title">
+    <section class="setup" id="install" aria-labelledby="install-title">
       <div class="container">
-        <div class="section-intro">
-          <p class="eyebrow">A small tool, not another platform</p>
-          <h2 id="workflow-title">Keep the knowledge.<br>Skip the infrastructure.</h2>
-        </div>
-        <dl class="features">
-          <div><dt><span class="feature-number mono" aria-hidden="true">01</span>A URL is all you need</dt><dd>yt-dlp fetches the available captions. ytmd keeps the text and timestamps, without downloading the video.</dd></div>
-          <div><dt><span class="feature-number mono" aria-hidden="true">02</span>Files you can keep</dt><dd>Raw captions and search live in SQLite. Readable markdown sits alongside it. No proprietary workspace to maintain.</dd></div>
-          <div><dt><span class="feature-number mono" aria-hidden="true">03</span>Context, not a context dump</dt><dd>Find matching passages, read a time window, and cite the source. Works from Pi, Codex, Claude Code, or your terminal.</dd></div>
-        </dl>
-      </div>
-    </section>
-
-    <section class="installation" id="install" aria-labelledby="install-title">
-      <div class="container install-grid">
-        <div class="install-copy">
-          <p class="eyebrow">Get started / v0.2.0</p>
-          <h2 id="install-title">Your next video.<br>Your next coding session.</h2>
-          <p>Install the CLI and agent skill. Restart your agent. Then give it a YouTube URL.</p>
-          <p class="requirements">Requires Python 3.9+ with SQLite FTS5 and yt-dlp. The installer checks dependencies and release checksums.</p>
-          <div class="agent-setup">
-            <h3>Rather let your agent set it up?</h3>
-            <p id="agent-prompt">Install ytmd from https://github.com/gvkhosla/ytmd. Read the README and installer first, check my dependencies, and ask before making system changes. Install the CLI and skill for my agent, then verify with ytmd doctor.</p>
-            <button class="button secondary copy-button" type="button" data-copy="agent-prompt" hidden>Copy setup prompt</button>
+        <div class="section-heading"><p class="eyebrow">01 / Install</p><h2 id="install-title">Choose how you want to start</h2><p>Use your agent, or paste the terminal commands yourself. Both install the same CLI.</p></div>
+        <div class="setup-grid">
+          <div class="agent-install">
+            <h3>Ask your coding agent</h3>
+            <p>Paste this into Pi, Codex, or Claude Code.</p>
+            <div class="prompt-panel"><p id="agent-prompt">Install ytmd using https://gvkhosla.github.io/ytmd/llms.txt. Read the instructions and installer first. Check dependencies, ask before making system changes, and install the CLI and skill for my agent. Verify with ytmd doctor.</p></div>
+            <button class="button primary" type="button" data-copy="agent-prompt" data-message="Setup prompt copied. Paste it into your agent." hidden>Copy agent instructions</button>
+            <p class="small">Already installed? Give your agent a YouTube URL and a task. No extra service or account is needed.</p>
           </div>
-        </div>
-
-        <div class="install-panel">
-          <div class="install-toolbar">
-            <div class="os-switch" role="group" aria-label="Installation operating system">
-              <button type="button" data-os="macos" aria-pressed="true">macOS</button>
-              <button type="button" data-os="linux" aria-pressed="false" hidden>Linux</button>
-            </div>
-            <button class="copy-code" type="button" data-copy="install-code" aria-label="Copy install commands" hidden>Copy</button>
-          </div>
-          <div class="install-body">
-            <p class="install-note" id="install-note">With <a href="https://brew.sh/">Homebrew</a> installed, paste into your terminal:</p>
-            <pre tabindex="0" aria-label="Installation commands"><code id="install-code">brew install python yt-dlp
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.2.0/install.sh -o /tmp/install-ytmd.sh
+          <div class="terminal-install">
+            <h3>Use your terminal</h3>
+            <p>The commands include the CLI and skills for all three agents.</p>
+            <details class="os-details" open>
+              <summary>macOS <span>With Homebrew</span></summary>
+              <div class="code-panel">
+                <div class="code-heading"><a href="https://brew.sh/">Need Homebrew?</a><button class="copy-button" type="button" data-copy="install-code" data-message="macOS install commands copied." hidden>Copy commands</button></div>
+                <pre tabindex="0" aria-label="macOS install commands"><code id="install-code">brew install python yt-dlp
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 export PATH="$HOME/.local/bin:$PATH"
 ytmd doctor</code></pre>
+              </div>
+            </details>
+            <details class="os-details" id="linux">
+              <summary>Linux <span>With Python + pipx</span></summary>
+              <div class="code-panel">
+                <p class="small prerequisite">First install Python 3.9+ with SQLite FTS5 and pipx using your package manager.</p>
+                <div class="code-heading"><span>Then run</span><button class="copy-button" type="button" data-copy="linux-code" data-message="Linux install commands copied." hidden>Copy commands</button></div>
+                <pre tabindex="0" aria-label="Linux install commands"><code id="linux-code">pipx install yt-dlp
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
+sh /tmp/install-ytmd.sh --agent all
+export PATH="$HOME/.local/bin:$PATH"
+ytmd doctor</code></pre>
+              </div>
+            </details>
+            <p class="small install-footnote">The installer checks dependencies and release checksums. Add <code>~/.local/bin</code> to your shell profile’s PATH if it isn’t there already. <a href="https://github.com/gvkhosla/ytmd#install">Install options ↗</a></p>
           </div>
-          <div class="after-install">
-            <p class="step-label">Then restart your agent and ask</p>
-            <p id="use-prompt">Save this YouTube video and apply the relevant ideas to this repository: [paste URL]</p>
-            <button class="copy-code" type="button" data-copy="use-prompt" hidden>Copy first prompt</button>
-          </div>
-          <p class="installer-detail">Installs skills for Pi, Codex, and Claude Code. No sudo or shell-profile edits by the installer. <a href="https://github.com/gvkhosla/ytmd#install">Install options ↗</a></p>
-          <noscript><p class="installer-detail">On Linux, install Python and pipx with your package manager, replace the Homebrew line with <code>pipx install yt-dlp</code>, and run the remaining commands. JavaScript is only needed for the copy buttons.</p></noscript>
         </div>
       </div>
     </section>
 
-    <section class="terminal-section" aria-labelledby="terminal-title">
-      <div class="container terminal-grid">
-        <div class="section-intro">
-          <p class="eyebrow">Also works without an agent</p>
-          <h2 id="terminal-title">Three commands.<br>That’s the workflow.</h2>
-          <p>No special integration required. Your agent can call the same commands you do.</p>
+    <section class="usage" id="use" aria-labelledby="use-title">
+      <div class="container">
+        <div class="section-heading"><p class="eyebrow">02 / Use</p><h2 id="use-title">Give it a video. Get useful context.</h2><p>After installing, restart your agent so it discovers the skill. Then paste this prompt and replace the URL.</p></div>
+        <div class="use-prompt-panel"><p id="use-prompt">Save this YouTube video with ytmd. Find the passages relevant to this repository, cite their timestamps, and suggest how to apply them: [paste URL]</p><button class="copy-button" type="button" data-copy="use-prompt" data-message="Video prompt copied. Paste it into your agent and add a URL." hidden>Copy prompt</button></div>
+        <div class="command-intro"><h3>Or run the commands directly</h3><p>These examples use a real video: Fireship’s <a href="https://www.youtube.com/watch?v=DHjqpvDnNGE">JavaScript in 100 Seconds</a>.</p></div>
+        <div class="command-list">
+          <div class="command-row"><div><h3>Save and read</h3><p>Fetch once, keep it locally, and print the transcript.</p></div><div class="command-value"><pre tabindex="0" aria-label="Save and read command"><code id="get-command">ytmd get "https://youtu.be/DHjqpvDnNGE"</code></pre><button class="copy-button" type="button" data-copy="get-command" data-message="Save-and-read command copied." hidden>Copy</button></div></div>
+          <div class="command-row"><div><h3>Find a passage</h3><p>Search your library and include nearby context.</p></div><div class="command-value"><pre tabindex="0" aria-label="Search command"><code id="search-command">ytmd search "javascript" --context 15 -n 3</code></pre><button class="copy-button" type="button" data-copy="search-command" data-message="Search command copied." hidden>Copy</button></div></div>
+          <div class="command-row"><div><h3>Read a time window</h3><p>Get the relevant section, not the entire video.</p></div><div class="command-value"><pre tabindex="0" aria-label="Read a time window command"><code id="show-command">ytmd show DHjqpvDnNGE --from 0:25 --to 0:45</code></pre><button class="copy-button" type="button" data-copy="show-command" data-message="Time-window command copied." hidden>Copy</button></div></div>
         </div>
-        <div class="command-reference">
-          <div><p class="step-label">Save</p><pre><code>ytmd "YOUTUBE_URL"</code></pre></div>
-          <div><p class="step-label">Search</p><pre><code>ytmd search "cache invalidation"</code></pre></div>
-          <div><p class="step-label">Read a window</p><pre><code>ytmd show VIDEO_ID --from 12:00 --to 15:00</code></pre></div>
-          <p class="quiet">Add <code>--json</code> for machine-readable output.</p>
-        </div>
+        <p class="small command-footnote">Use <code>--json</code> for structured output or <code>get --plain</code> for text without timestamps. <a href="https://github.com/gvkhosla/ytmd#commands">All commands ↗</a></p>
       </div>
     </section>
 
-    <section class="limits" aria-labelledby="limits-title">
-      <div class="container limits-inner">
-        <h2 id="limits-title">Small by design. Honest about the limits.</h2>
-        <p>ytmd uses available captions, not audio transcription. Videos without captions aren’t supported, and captions can contain mistakes. Search matches words, not meaning. YouTube restrictions and rate limits still apply.</p>
-        <p>Your library stays local. Fetching captions contacts YouTube. No browser cookies are read unless you explicitly request it.</p>
+    <section class="reference" aria-labelledby="reference-title">
+      <div class="container reference-grid">
+        <div><p class="eyebrow">03 / Reference</p><h2 id="reference-title">Readable by people.<br>Usable by agents.</h2><p>The setup, commands, output format, and limits are in one plain-text file. No JavaScript or page scraping required.</p><a class="reference-link" href="./llms.txt">Read llms.txt ↗</a></div>
+        <dl class="facts">
+          <div><dt>Storage</dt><dd>SQLite is the source of truth. Markdown is a generated export. Set <code>YTMD_DIR</code> to change the location.</dd></div>
+          <div><dt>Captions, not transcription</dt><dd>Videos need available captions. Captions can contain mistakes; ytmd doesn’t transcribe audio.</dd></div>
+          <div><dt>Local search, not AI answers</dt><dd>Search matches words. Your agent interprets the results. No embeddings, summarizer, or paid API.</dd></div>
+          <div><dt>Network access</dt><dd>Fetching captions contacts YouTube. Saved content works offline. Browser cookies are only read if you explicitly request it.</dd></div>
+        </dl>
       </div>
     </section>
   </main>
-
-  <footer class="site-footer">
-    <div class="container footer-inner">
-      <p>Made by <a href="https://github.com/gvkhosla">Geet Khosla</a>. Built to stay small.</p>
-      <nav aria-label="Footer navigation">
-        <a href="https://github.com/gvkhosla/ytmd">GitHub</a>
-        <a href="https://github.com/gvkhosla/ytmd/releases/tag/v0.2.0">v0.2.0</a>
-        <a href="https://github.com/gvkhosla/ytmd/blob/main/LICENSE">MIT license</a>
-      </nav>
-    </div>
-  </footer>
+  <footer class="site-footer"><div class="container footer-inner"><p>ytmd · MIT licensed · Made by <a href="https://github.com/gvkhosla">Geet Khosla</a></p><nav aria-label="Footer navigation"><a href="./llms.txt">Agent guide</a><a href="https://github.com/gvkhosla/ytmd/releases/tag/v0.3.0">v0.3.0</a><a href="https://github.com/gvkhosla/ytmd">GitHub ↗</a></nav></div></footer>
+  <noscript><p class="container small">Copy buttons need JavaScript. All instructions and commands above are available as selectable text.</p></noscript>
   <p id="copy-status" class="copy-status" role="status" aria-live="polite"></p>
 </body>
 </html>

@@ -18,7 +18,7 @@ import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 SCHEMA = 1
 ID = re.compile(r"[A-Za-z0-9_-]{11}\Z")
 LANG = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -376,11 +376,14 @@ def output(data, args, text):
     print(json.dumps(data, ensure_ascii=False, indent=2) if args.json else text)
 
 
-def cmd_add(args):
+def ensure_saved(args):
+    """Shared ingestion for add/get; return data without contaminating stdout."""
     key = video_id(args.url)
     with closing(connect()) as conn:
         existing = conn.execute("SELECT * FROM videos WHERE id=?", (key,)).fetchone()
     if existing and not args.force:
+        if args.lang and existing["lang"] not in (args.lang, args.lang + "-orig"):
+            raise Error("language_mismatch", f"Saved track is {existing['lang']}, not {args.lang}. Use --force to replace it, or omit --lang to read the saved track.")
         row, status = dict(existing), "existing"
     else:
         if not args.json:
@@ -392,15 +395,50 @@ def cmd_add(args):
         path = write_markdown(row)
     except OSError as e:
         raise Error("export_failed", f"Transcript is saved in SQLite, but markdown export failed: {e}. Repair with: ytmd export")
-    data = dict(status=status, id=key, title=row["title"], url=row["url"], path=path, captions=row["captions"], lang=row["lang"])
-    output(data, args, f"{status}: {row['title']}\n{path}")
+    return row, dict(status=status, id=key, title=row["title"], url=row["url"], path=path, captions=row["captions"], lang=row["lang"])
+
+
+def cmd_add(args):
+    row, data = ensure_saved(args)
+    output(data, args, f"{data['status']}: {row['title']}\n{data['path']}\nRead: ytmd show {row['id']} --from 0:00 --to 1:00")
+
+
+def window(cues, start, end=None):
+    # Include complete cues overlapping the window; zero-duration cues count at their start.
+    return [c for c in cues if (c["end"] > start or c["start"] >= start) and (end is None or c["start"] < end)]
+
+
+def check_range(args):
+    if args.to is not None and args.to <= args.start:
+        raise Error("invalid_range", "--to must be later than --from.")
+
+
+def print_transcript(row, args, extra=None):
+    cues = window(json.loads(row["cues_json"]), args.start, args.to)
+    selected = [dict(c, url=url_for(row["id"], c["start"])) for c in passages(cues)]
+    if args.plain:
+        print("\n\n".join(c["text"] for c in selected))
+        return
+    data = {k: row[k] for k in ("id", "title", "url", "channel", "lang", "captions", "caption_format", "duration_s")}
+    data.update(path=str(library() / f"{row['id']}.md"), passages=selected)
+    if extra:
+        data.update(extra)
+    text = f"# {row['title']}\n{row['url']}\n\n" + "\n\n".join(f"[{timestamp(c['start'])}] {c['text']}" for c in selected)
+    output(data, args, text)
+
+
+def cmd_get(args):
+    check_range(args)  # Invalid requests must not trigger a network fetch or save.
+    row, data = ensure_saved(args)
+    print_transcript(row, args, dict(status=data["status"]))
 
 
 def cmd_search(args):
     tokens = re.findall(r"\w+", " ".join(args.query), re.UNICODE)
     if not tokens:
         raise Error("invalid_query", "Enter at least one search word.")
-    query = " AND ".join('"' + t + '"' for t in tokens)
+    joiner = " AND " if args.match == "all" else " OR "
+    query = joiner.join('"' + t + '"' for t in dict.fromkeys(tokens))
     with closing(connect()) as conn:
         key = resolve(conn, args.video)["id"] if args.video else None
         rows = conn.execute("""SELECT v.id AS video_id,v.title,v.captions,v.lang,v.caption_format,p.start,p.end,p.text,
@@ -408,28 +446,36 @@ def cmd_search(args):
             JOIN passages p ON p.id=passages_fts.rowid JOIN videos v ON v.id=p.video_id
             WHERE passages_fts MATCH ? AND (? IS NULL OR v.id=?)
             ORDER BY score,p.video_id,p.start LIMIT ?""", (query, key, key, args.limit)).fetchall()
-    results = [dict(r, url=url_for(r["video_id"], r["start"])) for r in rows]
-    output(results, args, "\n\n".join(f"{r['video_id']}  {r['title']} [{timestamp(r['start'])}]\n{r['text']}\n{r['url']}" for r in results) or "No matches. Try different keywords; search is lexical, not semantic.")
+        results = [dict(r, url=url_for(r["video_id"], r["start"])) for r in rows]
+        if args.context:
+            sources = {}
+            for r in results:
+                key = r["video_id"]
+                if key not in sources:
+                    sources[key] = json.loads(conn.execute("SELECT cues_json FROM videos WHERE id=?", (key,)).fetchone()[0])
+                nearby = window(sources[key], max(0, r["start"] - args.context), r["end"] + args.context)
+                if nearby:
+                    r["context"] = dict(start=nearby[0]["start"], end=max(c["end"] for c in nearby), text=transcript(nearby), url=url_for(key, nearby[0]["start"]))
+    output(results, args, "\n\n".join(f"{r['video_id']}  {r['title']} [{timestamp(r['start'])}]\n{r.get('context', {}).get('text', r['text'])}\n{r['url']}" for r in results) or "No matches. Try fewer keywords or --match any; search is lexical, not semantic.")
 
 
 def cmd_show(args):
-    if args.to is not None and args.to <= args.start:
-        raise Error("invalid_range", "--to must be later than --from.")
+    check_range(args)
     with closing(connect()) as conn:
         row = resolve(conn, args.video)
-    # Clip by source cues, not coarse search passages. Include cues overlapping the requested window.
-    cues = [c for c in json.loads(row["cues_json"]) if (c["end"] > args.start or c["start"] >= args.start) and (args.to is None or c["start"] < args.to)]
-    selected = [dict(c, url=url_for(row["id"], c["start"])) for c in passages(cues)]
-    data = {k: row[k] for k in ("id", "title", "url", "channel", "lang", "captions", "caption_format")}
-    data["passages"] = selected
-    text = f"# {row['title']}\n{row['url']}\n\n" + "\n\n".join(f"[{timestamp(c['start'])}] {c['text']}" for c in selected)
-    output(data, args, text)
+    print_transcript(row, args)
 
 
 def cmd_list(args):
+    literal = (args.query or "").replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    term = "%" + literal + "%"
     with closing(connect()) as conn:
-        rows = [dict(r) for r in conn.execute("SELECT id,title,channel,url,lang,captions,duration_s FROM videos ORDER BY ingested_at DESC")]
-    output(rows, args, "\n".join(f"{r['id']}  {r['title']}" for r in rows) or "Library empty. Run: ytmd URL")
+        rows = [dict(r) for r in conn.execute("""SELECT id,title,channel,url,lang,captions,duration_s FROM videos
+            WHERE title LIKE ? ESCAPE '\\' OR channel LIKE ? ESCAPE '\\' OR id LIKE ? ESCAPE '\\'
+            ORDER BY ingested_at DESC,id LIMIT ? OFFSET ?""", (term, term, term, args.limit, args.offset))]
+    for row in rows:
+        row["path"] = str(library() / f"{row['id']}.md")
+    output(rows, args, "\n".join(f"{r['id']}  {r['title']}\n  {r['channel'] or 'Unknown channel'} · {timestamp(r['duration_s']) if r['duration_s'] is not None else 'Unknown duration'}" for r in rows) or "No saved videos match this page. Run: ytmd list or ytmd URL")
 
 
 def cmd_export(args):
@@ -495,15 +541,37 @@ def language_arg(value):
     return value
 
 
+def nonnegative(value):
+    try:
+        number = int(value)
+        if not 0 <= number <= 1000000000:
+            raise ValueError()
+        return number
+    except ValueError:
+        raise argparse.ArgumentTypeError("use a non-negative integer up to 1000000000")
+
+
+def context_arg(value):
+    number = nonnegative(value)
+    if number > 120:
+        raise argparse.ArgumentTypeError("context must be between 0 and 120 seconds")
+    return number
+
+
 def parser():
-    p = Parser(description=__doc__, epilog="Library: ~/ytmd (override with YTMD_DIR). Bare URL is shorthand for add URL.")
+    p = Parser(description=__doc__, epilog="Start: ytmd get URL | Search: ytmd search WORDS | Read: ytmd show ID --from 0:00 --to 1:00. Library: ~/ytmd (override YTMD_DIR).")
     p.add_argument("--version", action="version", version=f"ytmd {VERSION}")
     sub = p.add_subparsers(dest="command", required=True)
-    for name, help_text, handler in [("add", "save a video's captions", cmd_add), ("search", "search timestamped passages", cmd_search), ("show", "read a video or time window", cmd_show), ("list", "list saved videos", cmd_list), ("export", "rebuild markdown from SQLite", cmd_export), ("rm", "delete a saved video", cmd_rm), ("doctor", "check local dependencies", cmd_doctor), ("path", "print library location", None)]:
+    for name, help_text, handler in [("add", "save a video's captions", cmd_add), ("get", "save if needed, then print the transcript", cmd_get), ("search", "search timestamped passages", cmd_search), ("show", "read a video or time window", cmd_show), ("list", "list saved videos", cmd_list), ("export", "rebuild markdown from SQLite", cmd_export), ("rm", "delete a saved video", cmd_rm), ("doctor", "check local dependencies", cmd_doctor), ("path", "print library location", None)]:
         s = sub.add_parser(name, help=help_text)
-        s.add_argument("--json", action="store_true", help="machine-readable output (errors too)")
+        formats = s.add_mutually_exclusive_group()
+        formats.add_argument("--json", action="store_true", help="machine-readable output (errors too)")
+        if name in ("get", "show"):
+            formats.add_argument("--plain", action="store_true", help="text only, without metadata or timestamps")
+            s.add_argument("--from", dest="start", type=time_arg, default=0.0)
+            s.add_argument("--to", type=time_arg)
         s.set_defaults(handler=handler)
-        if name == "add":
+        if name in ("add", "get"):
             s.add_argument("url")
             s.add_argument("--lang", type=language_arg, default=os.environ.get("YTMD_LANG"), help="one language; default: English then original/manual captions")
             s.add_argument("--force", action="store_true", help="replace saved captions")
@@ -512,11 +580,14 @@ def parser():
             s.add_argument("query", nargs="+")
             s.add_argument("--video", help="restrict to this video ID/title")
             s.add_argument("-n", "--limit", type=positive, default=10)
+            s.add_argument("--match", choices=("all", "any"), default="all", help="match all query words (default) or any of them")
+            s.add_argument("--context", type=context_arg, default=0, metavar="SECONDS", help="include 0–120 seconds around each matched passage")
+        elif name == "list":
+            s.add_argument("query", nargs="?", help="filter by title, channel, or ID (literal substring)")
+            s.add_argument("-n", "--limit", type=positive, default=50)
+            s.add_argument("--offset", type=nonnegative, default=0)
         elif name in ("show", "rm"):
             s.add_argument("video")
-            if name == "show":
-                s.add_argument("--from", dest="start", type=time_arg, default=0.0)
-                s.add_argument("--to", type=time_arg)
         elif name == "export":
             s.add_argument("directory", nargs="?")
     return p
@@ -525,9 +596,11 @@ def parser():
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     try:
-        if not argv or argv[0] == "help":
+        if not argv:
             parser().print_help()
             return 0
+        if argv[0] == "help":
+            argv = argv[1:] + ["--help"]
         if argv[0].startswith(("https://", "http://")) or ID.fullmatch(argv[0]):
             argv.insert(0, "add")
         args = parser().parse_args(argv)

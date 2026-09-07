@@ -240,6 +240,74 @@ class StorageAndCLI(Isolated):
         self.assertNotEqual(self.cli("rm", "tutorial").returncode, 0)
         self.assertEqual(len(json.loads(self.cli("list", "--json").stdout)), 1)
 
+    def test_get_cached_plain_is_offline_and_has_no_metadata(self):
+        self.seed()
+        with patch.object(y, "fetch", side_effect=AssertionError("network called")), redirect_stdout(io.StringIO()) as captured:
+            self.assertEqual(y.main(["get", KEY, "--plain", "--from", "0", "--to", "5"]), 0)
+        self.assertEqual(captured.getvalue().strip(), "Use List<T> to store data.")
+        self.assertEqual(self.cli("show", KEY, "--plain", "--from", "0", "--to", "5").stdout.strip(), "Use List<T> to store data.")
+
+    def test_explicit_language_does_not_silently_use_wrong_cached_track(self):
+        self.seed()
+        for command in ("add", "get"):
+            p = self.cli(command, KEY, "--lang", "de", "--json")
+            self.assertEqual(p.returncode, 1)
+            self.assertEqual(json.loads(p.stderr)["error"]["code"], "language_mismatch")
+        self.assertEqual(self.cli("get", KEY, "--lang", "en", "--json").returncode, 0)
+
+    def test_get_invalid_range_does_not_create_library(self):
+        p = self.cli("get", KEY, "--from", "60", "--to", "20", "--json")
+        self.assertEqual(json.loads(p.stderr)["error"]["code"], "invalid_range")
+        self.assertFalse(y.library().exists())
+
+    def test_new_argument_validation(self):
+        for args in [("get", KEY, "--plain"), ("show", KEY, "--plain"), ("search", "test", "--context", "121"), ("search", "test", "--context", "-1"), ("search", "test", "--context", "nope"), ("search", "test", "--match", "semantic"), ("list", "--offset", "-1"), ("list", "--limit", "101")]:
+            p = self.cli(*args, "--json")
+            self.assertEqual(p.returncode, 2, p.stderr)
+            self.assertEqual(json.loads(p.stderr)["error"]["code"], "usage")
+
+    def test_search_any_broadens_without_changing_default(self):
+        self.seed()
+        self.assertEqual(json.loads(self.cli("search", "cache unicorn", "--json").stdout), [])
+        data = json.loads(self.cli("search", "cache unicorn", "--match", "any", "--json").stdout)
+        self.assertEqual(len(data), 2)
+        self.assertNotIn("context", data[0])
+
+    def test_search_context_preserves_match_and_adds_nearby_cues(self):
+        conn = self.db()
+        y.save(conn, row([dict(start=0, end=5, text="Introduction"), dict(start=10, end=15, text="Cache invalidation"), dict(start=20, end=25, text="A useful conclusion"), dict(start=90, end=95, text="Outside the context window")]))
+        p = self.cli("search", "invalidation", "--context", "15", "--video", KEY, "--json")
+        data = json.loads(p.stdout)[0]
+        self.assertEqual(data["text"], "Cache invalidation")
+        self.assertEqual(data["start"], 10)
+        context = data["context"]
+        self.assertEqual((context["start"], context["end"]), (0, 25))
+        self.assertIn("Introduction", context["text"])
+        self.assertIn("conclusion", context["text"])
+        self.assertNotIn("Outside", context["text"])
+        self.assertTrue(context["url"].endswith("&t=0s"))
+        self.assertTrue(data["url"].endswith("&t=10s"))
+
+    def test_list_filters_and_pages_stably(self):
+        conn = self.seed()
+        y.save(conn, dict(row(), id="dQw4w9WgXcQ", title="Another tutorial", channel="Fireship"))
+        self.assertEqual(len(json.loads(self.cli("list", "tutorial", "--json").stdout)), 2)
+        first = json.loads(self.cli("list", "--limit", "1", "--json").stdout)[0]
+        second = json.loads(self.cli("list", "--limit", "1", "--offset", "1", "--json").stdout)[0]
+        self.assertNotEqual(first["id"], second["id"])
+        filtered = json.loads(self.cli("list", "fireship", "--json").stdout)
+        self.assertEqual(len(filtered), 1)
+        self.assertIn("path", filtered[0])
+        self.assertEqual(json.loads(self.cli("list", "unmatched", "--json").stdout), [])
+        self.assertEqual(json.loads(self.cli("list", "%", "--json").stdout), [])
+        self.assertEqual(json.loads(self.cli("list", "_", "--json").stdout), [])
+
+    def test_command_specific_help(self):
+        p = self.cli("help", "get")
+        self.assertEqual(p.returncode, 0)
+        self.assertIn("--plain", p.stdout)
+        self.assertNotIn("--context", p.stdout)
+
     def test_doctor_does_not_create_library(self):
         p = self.cli("doctor", "--json")
         self.assertIn("fts5", json.loads(p.stdout))
@@ -288,6 +356,24 @@ else:
         self.assertIn("List<T>", saved["transcript"])
         self.assertEqual(len(json.loads(self.cli("search", "safely", "--json").stdout)), 1)
         self.assertEqual(len(json.loads(self.cli("show", KEY, "--from", "59", "--to", "62", "--json").stdout)["passages"]), 1)
+
+    def test_get_saves_then_returns_one_structured_transcript(self):
+        p = self.cli("get", KEY, "--from", "59", "--to", "62", "--json")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        data = json.loads(p.stdout)
+        self.assertEqual(data["status"], "saved")
+        self.assertEqual(data["passages"][0]["text"], "Store List<T> safely")
+        self.assertTrue(Path(data["path"]).exists())
+        self.assertEqual(p.stderr, "")
+        with patch.dict(os.environ, {"YTMD_TEST_MODE": "network must not be called"}):
+            second = self.cli("get", KEY, "--lang", "en", "--json")
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertEqual(json.loads(second.stdout)["status"], "existing")
+
+    def test_get_plain_can_be_piped_without_status_lines(self):
+        p = self.cli("get", KEY, "--plain")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual(p.stdout.strip(), "Store List<T> safely")
 
     def test_rate_limit_preserves_existing_record(self):
         conn = self.db()

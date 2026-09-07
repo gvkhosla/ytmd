@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0
+
+- `get URL`: save once and read in one command, with time-window and JSON support.
+- `get/show --plain`: clean transcript text for copying or piping.
+- `search --context SECONDS`: surrounding captions, with original match fields preserved.
+- `search --match any`: broader keyword retrieval without embeddings.
+- Filter saved videos by title/channel/ID and paginate with `list --limit --offset`.
+- Explicit language mismatch errors for cached tracks; per-command `help`.
+- Shorter, task-oriented site with copyable commands and static macOS/Linux instructions.
+- Plain-text `llms.txt` for agents, linked from the site and agent skill.
+- No database migration or added runtime dependencies from v0.2.
+
 ## 0.2.0
 
 - Preserve raw caption payloads and original cue timing in SQLite.
