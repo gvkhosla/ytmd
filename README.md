@@ -6,7 +6,7 @@ Save a video's captions as local markdown. Search timestamped passages from Pi,
 Codex, Claude Code, or your terminal. One Python script, SQLite, and yt-dlp.
 No API keys, model downloads, or server. Videos need available captions.
 
-[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.3.0)
+[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.4.0)
 
 ## Install
 
@@ -27,7 +27,7 @@ install the CLI and skill for my agent. Verify with ytmd doctor.
 ```bash
 brew install python yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
@@ -37,12 +37,12 @@ ytmd doctor
 ```bash
 pipx install yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
 
-[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.3.0/install.sh) before running it.
+[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.4.0/install.sh) before running it.
 It verifies release checksums, installs into `~/.local/bin`, and adds skills for
 Pi/Codex (`~/.agents/skills/ytmd`) and Claude Code (`~/.claude/skills/ytmd`).
 Use `--agent pi`, `codex`, `claude`, or `none` instead of `all` to narrow installation.
@@ -67,6 +67,7 @@ Try a real video:
 
 ```bash
 ytmd get "https://youtu.be/DHjqpvDnNGE"
+ytmd info DHjqpvDnNGE
 ytmd search "javascript" --context 15 -n 3
 ytmd show DHjqpvDnNGE --from 0:25 --to 0:45
 ```
@@ -76,8 +77,10 @@ ytmd show DHjqpvDnNGE --from 0:25 --to 0:45
 | `ytmd add "URL"` (or `ytmd "URL"`) | Save captions and return the file path |
 | `ytmd get "URL"` | Save if needed, then print the transcript |
 | `ytmd get "URL" --plain` | Text only, without timestamps or metadata; suitable for piping |
+| `ytmd info ID` | Metadata and chapter outline, without the transcript |
 | `ytmd search "words" --video ID --json` | Find matching passages in one video |
 | `ytmd search "words" --match any --context 15` | Match any word and include nearby captions |
+| `ytmd search "words" --match phrase` | Require the words to appear next to each other |
 | `ytmd show ID --from 12:00 --to 15:00` | Read a time window from a saved video |
 | `ytmd list "title or channel" --limit 20 --offset 0` | Filter and paginate saved videos |
 | `ytmd export [directory]` | Rebuild markdown from SQLite |
@@ -90,12 +93,16 @@ accept `--plain` or `--json` (mutually exclusive). Times accept seconds, MM:SS, 
 Whole cues overlapping a window are included, so a sentence may extend beyond its boundaries.
 
 **Search:** lexical, not semantic. All words must match within a passage by default;
-`--match any` broadens this. Punctuation separates words; FTS operators aren't exposed.
+`--match any` broadens this, `--match phrase` requires them in order. Punctuation separates words; FTS operators aren't exposed.
 `--context 0–120` adds that many seconds around each hit. Nearby hits may have overlapping
 context. `-n` limits results (default 10, max 100). `--video` accepts an ID, URL, or unambiguous title.
 
 **List:** optional literal substring filter on title, channel, or ID. Default limit 50,
-max 100. Use `--offset` for subsequent pages. JSON includes local markdown paths.
+max 100. Use `--offset` for subsequent pages. JSON includes local markdown paths, `uploaded_at`, and `ingested_at`.
+
+**Info:** returns title, channel, duration, caption provenance, and chapters when YouTube or the
+description provides them. add/get JSON also includes `duration_s` and `chapters`. For long videos,
+prefer `info` plus a time window over dumping the full transcript.
 
 **Saving:** repeated ingestion reuses the saved track without fetching YouTube again.
 `--lang de` requests one language; `--force` replaces a saved track. If a saved language
@@ -121,7 +128,8 @@ required dependency is missing. Help and version output are plain text.
 Search results include the matching passage's `video_id`, `title`, `start`, `end`,
 `text`, `url`, caption provenance, and score. `--context` adds a separate
 `context: {start, end, text, url}` object without changing the matching passage fields.
-get/show return metadata and `passages: [{start, end, text, url}]`; get adds `status`.
+get/show return metadata, `chapters`, and `passages: [{start, end, text, url}]`; get adds `status`.
+`info` returns the same metadata and `chapters` without passages.
 
 ## Storage and limits
 
@@ -136,7 +144,8 @@ get/show return metadata and `passages: [{start, end, text, url}]`; get adds `st
   only with explicit consent: `ytmd "URL" --cookies-from-browser BROWSER`.
 - If export fails after ingestion, SQLite retains the transcript. Repair with `ytmd export`.
 
-v0.3 uses the same database schema as v0.2. v0.1 libraries are backed up as
+v0.4 adds a `chapters_json` column (schema 2) and backfills it from saved descriptions.
+v0.3 libraries open and migrate in place. v0.1 libraries are backed up as
 `ytmd.pre-v0.2.db` before migration. Imported timing is approximate and provenance is
 unknown; lost text can't be reconstructed. Re-ingest with `--force` to fetch source captions.
 

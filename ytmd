@@ -18,8 +18,8 @@ import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "0.3.0"
-SCHEMA = 1
+VERSION = "0.4.0"
+SCHEMA = 2
 ID = re.compile(r"[A-Za-z0-9_-]{11}\Z")
 LANG = re.compile(r"[A-Za-z0-9_-]+\Z")
 HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be", "www.youtu.be"}
@@ -171,6 +171,97 @@ def passages(cues):
     return result
 
 
+CHAPTER_LINE = re.compile(
+    r"^\s*(?:[-*•]+\s+)?(?:\d{1,2}[.)]\s+)?\(?"
+    r"((?:\d{1,2}:)?\d{1,2}:\d{2})(?!\d)\)?\s*(?:[-–—:|]\s*)*(.*?)\s*$"
+)
+
+
+def finish_chapters(items, duration=None):
+    cleaned, seen = [], set()
+    for start, title, end in items:
+        if start in seen or not math.isfinite(start) or start < 0:
+            continue
+        if duration is not None and start > duration:
+            continue
+        seen.add(start)
+        cleaned.append({"start": start, "title": title, "end": end})
+    cleaned.sort(key=lambda c: c["start"])
+    for i, ch in enumerate(cleaned):
+        nxt = cleaned[i + 1]["start"] if i + 1 < len(cleaned) else duration
+        end = ch["end"]
+        if end is None or (nxt is not None and end > nxt):
+            ch["end"] = nxt if nxt is not None else ch["start"]
+        elif end < ch["start"]:
+            ch["end"] = ch["start"]
+    return cleaned
+
+
+def parse_chapters(description, duration=None):
+    if not description:
+        return []
+    best, run = [], []
+    for line in description.splitlines():
+        match = CHAPTER_LINE.match(line)
+        if not match:
+            continue
+        try:
+            start = seconds(match.group(1))
+        except ValueError:
+            continue
+        title = normalize(match.group(2)).strip(" -–—:|")
+        if not title or title.lower() in {"am", "pm"} or re.match(r"https?://", title, re.I):
+            continue
+        if run and start < run[-1][0]:
+            if len(run) > len(best):
+                best = run
+            run = []
+        run.append((start, title, None))
+    if len(run) > len(best):
+        best = run
+    return finish_chapters(best, duration) if len(best) >= 2 else []
+
+
+def chapters_from_player(info, description, duration):
+    items = []
+    raw = info.get("chapters")
+    if isinstance(raw, list):
+        for ch in raw:
+            if not isinstance(ch, dict):
+                items = []
+                break
+            title = normalize(str(ch.get("title") or ""))
+            try:
+                start = float(ch.get("start_time"))
+                end = ch.get("end_time")
+                end = float(end) if end is not None else None
+            except (TypeError, ValueError):
+                items = []
+                break
+            if not title or not math.isfinite(start) or start < 0:
+                continue
+            if end is not None and (not math.isfinite(end) or end < start):
+                end = None
+            items.append((start, title, end))
+    result = finish_chapters(items, duration) if items else []
+    return result or parse_chapters(description, duration)
+
+
+def public_chapters(row):
+    chapters = []
+    raw = row.get("chapters_json")
+    if raw:
+        try:
+            loaded = json.loads(raw)
+            if isinstance(loaded, list):
+                chapters = loaded
+        except (TypeError, ValueError):
+            chapters = []
+    if not chapters:
+        chapters = parse_chapters(row.get("description") or "", row.get("duration_s"))
+    return [dict(c, url=url_for(row["id"], c["start"])) for c in chapters]
+
+
 def transcript(cues):
     return "\n\n".join(f"[{timestamp(c['start'])}] {c['text']}" for c in passages(cues))
 
@@ -237,7 +328,10 @@ def fetch(key, language, browser):
     uploaded = info.get("upload_date") or ""
     if re.fullmatch(r"\d{8}", uploaded):
         uploaded = f"{uploaded[:4]}-{uploaded[4:6]}-{uploaded[6:]}"
-    return dict(id=key, title=info.get("title") or key, channel=info.get("channel") or info.get("uploader") or "", url=url_for(key), uploaded_at=uploaded, duration_s=info.get("duration"), description=info.get("description") or "", captions=source, lang=lang, ingested_at=datetime.now(timezone.utc).isoformat(), transcript=transcript(cues), cues_json=json.dumps(cues, ensure_ascii=False), raw_captions=raw, caption_format=fmt)
+    description = info.get("description") or ""
+    duration = info.get("duration")
+    chapters = chapters_from_player(info, description, duration)
+    return dict(id=key, title=info.get("title") or key, channel=info.get("channel") or info.get("uploader") or "", url=url_for(key), uploaded_at=uploaded, duration_s=duration, description=description, captions=source, lang=lang, ingested_at=datetime.now(timezone.utc).isoformat(), transcript=transcript(cues), cues_json=json.dumps(cues, ensure_ascii=False), raw_captions=raw, caption_format=fmt, chapters_json=json.dumps(chapters, ensure_ascii=False) if chapters else None)
 
 
 # SQLite is canonical; markdown is a recoverable, generated view.
@@ -245,7 +339,7 @@ VIDEO_SCHEMA = """CREATE TABLE IF NOT EXISTS videos (
     id TEXT PRIMARY KEY, title TEXT NOT NULL, channel TEXT, url TEXT NOT NULL,
     uploaded_at TEXT, duration_s INTEGER, description TEXT, captions TEXT NOT NULL,
     lang TEXT, ingested_at TEXT NOT NULL, transcript TEXT NOT NULL,
-    cues_json TEXT, raw_captions TEXT, caption_format TEXT)"""
+    cues_json TEXT, raw_captions TEXT, caption_format TEXT, chapters_json TEXT)"""
 
 
 def legacy_cues(row):
@@ -265,6 +359,38 @@ def insert_passages(conn, key, cues):
     conn.executemany("INSERT INTO passages(video_id,start,end,text) VALUES (?,?,?,?)", [(key, c["start"], c["end"], c["text"]) for c in passages(cues)])
 
 
+def migrate_v1(conn):
+    conn.execute(VIDEO_SCHEMA)
+    columns = {r[1] for r in conn.execute("PRAGMA table_info(videos)")}
+    for col in ("cues_json", "raw_captions", "caption_format", "chapters_json"):
+        if col not in columns:
+            conn.execute(f"ALTER TABLE videos ADD COLUMN {col} TEXT")
+    conn.execute("CREATE TABLE passages (id INTEGER PRIMARY KEY, video_id TEXT NOT NULL REFERENCES videos(id) ON DELETE CASCADE, start REAL NOT NULL, end REAL NOT NULL, text TEXT NOT NULL)")
+    conn.execute("CREATE INDEX passages_video ON passages(video_id,start)")
+    conn.execute("CREATE VIRTUAL TABLE passages_fts USING fts5(text, content='passages', content_rowid='id', tokenize='unicode61')")
+    conn.execute("CREATE TRIGGER passages_ai AFTER INSERT ON passages BEGIN INSERT INTO passages_fts(rowid,text) VALUES(new.id,new.text); END")
+    conn.execute("CREATE TRIGGER passages_ad AFTER DELETE ON passages BEGIN INSERT INTO passages_fts(passages_fts,rowid,text) VALUES('delete',old.id,old.text); END")
+    for row in conn.execute("SELECT * FROM videos").fetchall():
+        cues = legacy_cues(row)
+        conn.execute("UPDATE videos SET cues_json=?, caption_format='legacy', captions='unknown' WHERE id=?", (json.dumps(cues, ensure_ascii=False), row["id"]))
+        insert_passages(conn, row["id"], cues)
+    conn.execute("DROP TABLE IF EXISTS videos_fts")
+    conn.execute("PRAGMA user_version=1")
+
+
+def migrate_v2(conn):
+    columns = {r[1] for r in conn.execute("PRAGMA table_info(videos)")}
+    if "chapters_json" not in columns:
+        conn.execute("ALTER TABLE videos ADD COLUMN chapters_json TEXT")
+    for row in conn.execute("SELECT id, description, duration_s, chapters_json FROM videos").fetchall():
+        if row["chapters_json"]:
+            continue
+        chapters = parse_chapters(row["description"] or "", row["duration_s"])
+        if chapters:
+            conn.execute("UPDATE videos SET chapters_json=? WHERE id=?", (json.dumps(chapters, ensure_ascii=False), row["id"]))
+    conn.execute("PRAGMA user_version=2")
+
+
 def connect():
     root = library()
     root.mkdir(parents=True, exist_ok=True)
@@ -279,7 +405,7 @@ def connect():
         return conn
     exists = conn.execute("SELECT 1 FROM sqlite_master WHERE name='videos'").fetchone()
     try:
-        if exists:
+        if exists and version == 0:
             backup = root / "ytmd.pre-v0.2.db"
             if not backup.exists():
                 with closing(sqlite3.connect(backup)) as target:
@@ -287,24 +413,14 @@ def connect():
         with conn:
             conn.execute("BEGIN IMMEDIATE")
             # Another process may have migrated while we waited for its lock.
-            if conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA:
+            version = conn.execute("PRAGMA user_version").fetchone()[0]
+            if version == SCHEMA:
                 return conn
-            conn.execute(VIDEO_SCHEMA)
-            columns = {r[1] for r in conn.execute("PRAGMA table_info(videos)")}
-            for col in ("cues_json", "raw_captions", "caption_format"):
-                if col not in columns:
-                    conn.execute(f"ALTER TABLE videos ADD COLUMN {col} TEXT")
-            conn.execute("CREATE TABLE passages (id INTEGER PRIMARY KEY, video_id TEXT NOT NULL REFERENCES videos(id) ON DELETE CASCADE, start REAL NOT NULL, end REAL NOT NULL, text TEXT NOT NULL)")
-            conn.execute("CREATE INDEX passages_video ON passages(video_id,start)")
-            conn.execute("CREATE VIRTUAL TABLE passages_fts USING fts5(text, content='passages', content_rowid='id', tokenize='unicode61')")
-            conn.execute("CREATE TRIGGER passages_ai AFTER INSERT ON passages BEGIN INSERT INTO passages_fts(rowid,text) VALUES(new.id,new.text); END")
-            conn.execute("CREATE TRIGGER passages_ad AFTER DELETE ON passages BEGIN INSERT INTO passages_fts(passages_fts,rowid,text) VALUES('delete',old.id,old.text); END")
-            for row in conn.execute("SELECT * FROM videos").fetchall():
-                cues = legacy_cues(row)
-                conn.execute("UPDATE videos SET cues_json=?, caption_format='legacy', captions='unknown' WHERE id=?", (json.dumps(cues, ensure_ascii=False), row["id"]))
-                insert_passages(conn, row["id"], cues)
-            conn.execute("DROP TABLE IF EXISTS videos_fts")
-            conn.execute(f"PRAGMA user_version={SCHEMA}")
+            if version == 0:
+                migrate_v1(conn)
+                version = 1
+            if version < 2:
+                migrate_v2(conn)
     except Exception:
         conn.close()
         raise
@@ -320,7 +436,13 @@ def save(conn, row):
 
 def markdown(row):
     meta = {k: row[k] for k in ("title", "id", "url", "channel", "uploaded_at", "duration_s", "captions", "lang", "ingested_at", "caption_format")}
-    lines = ["---", *[f"{k}: {json.dumps(v, ensure_ascii=False)}" for k, v in meta.items()], "source: youtube", "---", "", f"# {normalize(row['title'])}", "", row["url"], "", "## Transcript", ""]
+    lines = ["---", *[f"{k}: {json.dumps(v, ensure_ascii=False)}" for k, v in meta.items()], "source: youtube", "---", "", f"# {normalize(row['title'])}", "", row["url"], ""]
+    chapters = public_chapters(row)
+    if chapters:
+        lines += ["## Chapters", ""]
+        lines += [f"[{timestamp(c['start'])}]({c['url']}) {c['title']}" for c in chapters]
+        lines += [""]
+    lines += ["## Transcript", ""]
     if row["caption_format"] == "legacy":
         lines += ["> Imported from v0.1; timing is approximate and original caption data is unavailable. Re-ingest with --force to recover source captions.", ""]
     for c in passages(json.loads(row["cues_json"])):
@@ -395,12 +517,13 @@ def ensure_saved(args):
         path = write_markdown(row)
     except OSError as e:
         raise Error("export_failed", f"Transcript is saved in SQLite, but markdown export failed: {e}. Repair with: ytmd export")
-    return row, dict(status=status, id=key, title=row["title"], url=row["url"], path=path, captions=row["captions"], lang=row["lang"])
+    return row, dict(status=status, id=key, title=row["title"], url=row["url"], path=path, captions=row["captions"], lang=row["lang"], duration_s=row["duration_s"], chapters=public_chapters(row))
 
 
 def cmd_add(args):
     row, data = ensure_saved(args)
-    output(data, args, f"{data['status']}: {row['title']}\n{data['path']}\nRead: ytmd show {row['id']} --from 0:00 --to 1:00")
+    hint = f"Outline: ytmd info {row['id']}" if data["chapters"] else f"Read: ytmd show {row['id']} --from 0:00 --to 1:00"
+    output(data, args, f"{data['status']}: {row['title']}\n{data['path']}\n{hint}")
 
 
 def window(cues, start, end=None):
@@ -419,8 +542,11 @@ def print_transcript(row, args, extra=None):
     if args.plain:
         print("\n\n".join(c["text"] for c in selected))
         return
+    remaining = (row["duration_s"] or 0) - (args.start or 0)
+    if not args.json and args.to is None and remaining >= 600:
+        print(f"ytmd: {timestamp(remaining)} transcript. Outline: ytmd info {row['id']}", file=sys.stderr)
     data = {k: row[k] for k in ("id", "title", "url", "channel", "lang", "captions", "caption_format", "duration_s")}
-    data.update(path=str(library() / f"{row['id']}.md"), passages=selected)
+    data.update(path=str(library() / f"{row['id']}.md"), chapters=public_chapters(row), passages=selected)
     if extra:
         data.update(extra)
     text = f"# {row['title']}\n{row['url']}\n\n" + "\n\n".join(f"[{timestamp(c['start'])}] {c['text']}" for c in selected)
@@ -437,8 +563,11 @@ def cmd_search(args):
     tokens = re.findall(r"\w+", " ".join(args.query), re.UNICODE)
     if not tokens:
         raise Error("invalid_query", "Enter at least one search word.")
-    joiner = " AND " if args.match == "all" else " OR "
-    query = joiner.join('"' + t + '"' for t in dict.fromkeys(tokens))
+    if args.match == "phrase":
+        query = '"' + " ".join(tokens) + '"'
+    else:
+        joiner = " AND " if args.match == "all" else " OR "
+        query = joiner.join('"' + t + '"' for t in dict.fromkeys(tokens))
     with closing(connect()) as conn:
         key = resolve(conn, args.video)["id"] if args.video else None
         rows = conn.execute("""SELECT v.id AS video_id,v.title,v.captions,v.lang,v.caption_format,p.start,p.end,p.text,
@@ -466,11 +595,26 @@ def cmd_show(args):
     print_transcript(row, args)
 
 
+def cmd_info(args):
+    with closing(connect()) as conn:
+        row = resolve(conn, args.video)
+    chapters = public_chapters(row)
+    data = {k: row[k] for k in ("id", "title", "url", "channel", "uploaded_at", "duration_s", "captions", "lang", "caption_format", "ingested_at")}
+    data.update(path=str(library() / f"{row['id']}.md"), chapters=chapters)
+    details = " · ".join(x for x in (row["channel"] or None, timestamp(row["duration_s"]) if row["duration_s"] is not None else None, f"{row['captions']} {row['lang']}".strip()) if x)
+    lines = [f"# {row['title']}", row["url"], "", details]
+    if chapters:
+        lines += ["", "Chapters:"] + [f"  {timestamp(c['start'])}  {c['title']}" for c in chapters]
+    else:
+        lines += ["", f"No chapters found. Read: ytmd show {row['id']} --from 0:00 --to 1:00"]
+    output(data, args, "\n".join(lines))
+
+
 def cmd_list(args):
     literal = (args.query or "").replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     term = "%" + literal + "%"
     with closing(connect()) as conn:
-        rows = [dict(r) for r in conn.execute("""SELECT id,title,channel,url,lang,captions,duration_s FROM videos
+        rows = [dict(r) for r in conn.execute("""SELECT id,title,channel,url,lang,captions,duration_s,uploaded_at,ingested_at FROM videos
             WHERE title LIKE ? ESCAPE '\\' OR channel LIKE ? ESCAPE '\\' OR id LIKE ? ESCAPE '\\'
             ORDER BY ingested_at DESC,id LIMIT ? OFFSET ?""", (term, term, term, args.limit, args.offset))]
     for row in rows:
@@ -559,11 +703,11 @@ def context_arg(value):
 
 
 def parser():
-    p = Parser(description=__doc__, epilog="Start: ytmd get URL | Search: ytmd search WORDS | Read: ytmd show ID --from 0:00 --to 1:00. Library: ~/ytmd (override YTMD_DIR).")
+    p = Parser(description=__doc__, epilog="Start: ytmd get URL | Outline: ytmd info ID | Search: ytmd search WORDS | Read: ytmd show ID --from 0:00 --to 1:00. Library: ~/ytmd (override YTMD_DIR).")
     p.add_argument("--version", action="version", version=f"ytmd {VERSION}")
     sub = p.add_subparsers(dest="command", required=True)
-    for name, help_text, handler in [("add", "save a video's captions", cmd_add), ("get", "save if needed, then print the transcript", cmd_get), ("search", "search timestamped passages", cmd_search), ("show", "read a video or time window", cmd_show), ("list", "list saved videos", cmd_list), ("export", "rebuild markdown from SQLite", cmd_export), ("rm", "delete a saved video", cmd_rm), ("doctor", "check local dependencies", cmd_doctor), ("path", "print library location", None)]:
-        s = sub.add_parser(name, help=help_text)
+    for name, help_text, handler in [("add", "save a video's captions", cmd_add), ("get", "save if needed, then print the transcript", cmd_get), ("search", "search timestamped passages", cmd_search), ("show", "read a video or time window", cmd_show), ("info", "metadata and chapters", cmd_info), ("list", "list saved videos", cmd_list), ("export", "rebuild markdown from SQLite", cmd_export), ("rm", "delete a saved video", cmd_rm), ("doctor", "check local dependencies", cmd_doctor), ("path", "print library location", None)]:
+        s = sub.add_parser(name, help=help_text, description=help_text)
         formats = s.add_mutually_exclusive_group()
         formats.add_argument("--json", action="store_true", help="machine-readable output (errors too)")
         if name in ("get", "show"):
@@ -580,13 +724,13 @@ def parser():
             s.add_argument("query", nargs="+")
             s.add_argument("--video", help="restrict to this video ID/title")
             s.add_argument("-n", "--limit", type=positive, default=10)
-            s.add_argument("--match", choices=("all", "any"), default="all", help="match all query words (default) or any of them")
+            s.add_argument("--match", choices=("all", "any", "phrase"), default="all", help="match all query words (default), any of them, or the words as one phrase")
             s.add_argument("--context", type=context_arg, default=0, metavar="SECONDS", help="include 0–120 seconds around each matched passage")
         elif name == "list":
             s.add_argument("query", nargs="?", help="filter by title, channel, or ID (literal substring)")
             s.add_argument("-n", "--limit", type=positive, default=50)
             s.add_argument("--offset", type=nonnegative, default=0)
-        elif name in ("show", "rm"):
+        elif name in ("show", "rm", "info"):
             s.add_argument("video")
         elif name == "export":
             s.add_argument("directory", nargs="?")

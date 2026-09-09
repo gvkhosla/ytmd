@@ -18,7 +18,7 @@ With permission, inspect then run:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor --json
 ```
@@ -31,24 +31,28 @@ Ask before persisting PATH changes. Do not invent a replacement scraper.
 
 1. Save only the video the user requested: `ytmd add "URL" --json`.
    `status: existing` means success. Do not force-refetch automatically.
-2. Find passages: `ytmd search "keywords" --video VIDEO_ID --context 15 -n 5 --json`.
+   JSON includes `duration_s` and `chapters` (YouTube chapters or description timestamps).
+2. For long videos, get the outline first: `ytmd info VIDEO_ID --json`.
+   Use chapter timestamps to pick windows. If `chapters` is empty, search instead.
+3. Find passages: `ytmd search "keywords" --video VIDEO_ID --context 15 -n 5 --json`.
    Omit `--video` to search across videos. Search matches all words by default;
-   use shorter queries or `--match any` to broaden an empty result. Context is optional
-   (0–120 seconds on either side); keep it small to avoid filling the session.
-3. Read a window: `ytmd show VIDEO_ID --from 12:00 --to 15:00 --json`.
+   use shorter queries, `--match any`, or `--match phrase` to change matching.
+   Context is optional (0–120 seconds on either side); keep it small to avoid filling the session.
+4. Read a window: `ytmd show VIDEO_ID --from 12:00 --to 15:00 --json`.
    Or save-and-read at once: `ytmd get "URL" --from 0:00 --to 1:00 --json`.
-4. Cite title + returned timestamp URL. Distinguish source claims from your suggestions
+5. Cite title + returned timestamp URL. Distinguish source claims from your suggestions
    and explain their relevance to the repository. Do not claim a full-video review
-   when only search hits were read.
+   when only search hits or chapters were read.
 
-Without a time range, get/show prints the full transcript. Use sequential windows for
-long-video reviews; disclose omitted sections. `--plain` removes metadata/timestamps
-for text-only exports, but cannot be combined with `--json`.
+Without a time range, get/show prints the full transcript. Do not do that for long videos.
+Use `info`, search, and sequential windows; disclose omitted sections. `--plain` removes
+metadata/timestamps for text-only exports, but cannot be combined with `--json`.
 
 ## Library
 
 - `ytmd list "title or channel" --limit 20 --offset 0 --json`: find saved videos by
   literal substring (title, channel, or ID). Default limit 50, max 100; offset paginates.
+  JSON includes `uploaded_at` and `ingested_at`.
 - `ytmd path --json`: library location (`~/ytmd`, override `YTMD_DIR`).
 - `ytmd export`: repair generated markdown from SQLite.
 - `ytmd help search`: command-specific help. `ytmd --version`: installed version.

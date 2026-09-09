@@ -111,6 +111,24 @@ class Parsing(Isolated):
         self.assertEqual(len(y.passages(cues)), 3)
         self.assertEqual(" ".join(c["text"] for c in cues), " ".join(c["text"] for c in y.passages(cues)))
 
+    def test_parse_chapters_from_common_description_formats(self):
+        dialectic = "Timestamps:\n- (0:00) - Opening Highlights\n- (1:37) - Intro: Miles\n- (1:04:54) - Craft and Trust\n"
+        chapters = y.parse_chapters(dialectic, 6788)
+        self.assertEqual([(c["start"], c["title"]) for c in chapters], [(0, "Opening Highlights"), (97, "Intro: Miles"), (3894, "Craft and Trust")])
+        self.assertEqual(chapters[0]["end"], 97)
+        self.assertEqual(chapters[-1]["end"], 6788)
+        yc = "Chapters:\n00:00 — Intro\n00:07 — What Should You Still Learn?\n02:01 — Knowledge Still Matters\n"
+        self.assertEqual([c["title"] for c in y.parse_chapters(yc)], ["Intro", "What Should You Still Learn?", "Knowledge Still Matters"])
+        plain = "00:00 Rewriting Postgres\n02:54 Michael’s background\n"
+        self.assertEqual([c["start"] for c in y.parse_chapters(plain)], [0, 174])
+        self.assertEqual(y.parse_chapters("Meet at 10:00 AM\nCall at 11:00 PM"), [])
+        self.assertEqual(y.parse_chapters("00:00 Intro only"), [])
+
+    def test_player_chapters_preferred_over_description(self):
+        info = dict(chapters=[dict(start_time=0, end_time=10, title="A"), dict(start_time=10, end_time=20, title="B")])
+        self.assertEqual([c["title"] for c in y.chapters_from_player(info, "00:00 From desc\n00:05 Also desc", 20)], ["A", "B"])
+        self.assertEqual([c["title"] for c in y.chapters_from_player({}, "00:00 From desc\n00:05 Also desc", 20)], ["From desc", "Also desc"])
+
 
 class StorageAndCLI(Isolated):
     def seed(self):
@@ -136,7 +154,7 @@ class StorageAndCLI(Isolated):
         self.assertEqual(migrated["captions"], "unknown")
         self.assertIsNone(migrated["raw_captions"])
         self.assertTrue((root / "ytmd.pre-v0.2.db").exists())
-        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 1)
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 2)
         self.assertIn("approximate", y.markdown(migrated))
         found = self.cli("search", "invalidation", "--json")
         self.assertEqual(found.returncode, 0)
@@ -149,6 +167,31 @@ class StorageAndCLI(Isolated):
         conn.close()
         with self.assertRaises(y.Error):
             y.connect()
+
+    def test_v1_library_gains_chapters_from_description(self):
+        root = y.library()
+        root.mkdir()
+        old = sqlite3.connect(root / "ytmd.db")
+        old.executescript("""CREATE TABLE videos (
+            id TEXT PRIMARY KEY, title TEXT, channel TEXT, url TEXT, uploaded_at TEXT, duration_s INTEGER,
+            description TEXT, captions TEXT, lang TEXT, ingested_at TEXT, transcript TEXT,
+            cues_json TEXT, raw_captions TEXT, caption_format TEXT);
+            CREATE TABLE passages (id INTEGER PRIMARY KEY, video_id TEXT NOT NULL REFERENCES videos(id) ON DELETE CASCADE, start REAL NOT NULL, end REAL NOT NULL, text TEXT NOT NULL);
+            CREATE INDEX passages_video ON passages(video_id,start);
+            CREATE VIRTUAL TABLE passages_fts USING fts5(text, content='passages', content_rowid='id', tokenize='unicode61');
+            CREATE TRIGGER passages_ai AFTER INSERT ON passages BEGIN INSERT INTO passages_fts(rowid,text) VALUES(new.id,new.text); END;
+            CREATE TRIGGER passages_ad AFTER DELETE ON passages BEGIN INSERT INTO passages_fts(passages_fts,rowid,text) VALUES('delete',old.id,old.text); END;
+            PRAGMA user_version=1;""")
+        old.execute("INSERT INTO videos VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (KEY, "A tutorial", "Test", y.url_for(KEY), "2026-01-01", 130, "Chapters:\n00:00 — Intro\n01:00 — Cache\n", "manual", "en", "2026-09-07T00:00:00Z", "[0:00] Use List<T>.", json.dumps([dict(start=0, end=4, text="Use List<T>.")]), "raw", "json3"))
+        old.execute("INSERT INTO passages(video_id,start,end,text) VALUES (?,?,?,?)", (KEY, 0, 4, "Use List<T>."))
+        old.commit()
+        old.close()
+        conn = self.db()
+        migrated = dict(conn.execute("SELECT chapters_json, cues_json, caption_format FROM videos").fetchone())
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 2)
+        self.assertEqual([c["title"] for c in json.loads(migrated["chapters_json"])], ["Intro", "Cache"])
+        self.assertEqual(migrated["caption_format"], "json3")
+        self.assertIn("List<T>", migrated["cues_json"])
 
     def test_search_returns_multiple_timestamped_passages(self):
         self.seed()
@@ -307,6 +350,53 @@ class StorageAndCLI(Isolated):
         self.assertEqual(p.returncode, 0)
         self.assertIn("--plain", p.stdout)
         self.assertNotIn("--context", p.stdout)
+        info = self.cli("help", "info")
+        self.assertEqual(info.returncode, 0)
+        self.assertIn("chapters", info.stdout)
+
+    def test_info_returns_chapters_without_transcript(self):
+        conn = self.db()
+        y.save(conn, dict(row(), chapters_json=json.dumps([dict(start=0, end=60, title="Intro"), dict(start=60, end=130, title="Main")])))
+        p = self.cli("info", KEY, "--json")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        data = json.loads(p.stdout)
+        self.assertEqual([c["title"] for c in data["chapters"]], ["Intro", "Main"])
+        self.assertTrue(data["chapters"][0]["url"].endswith("&t=0s"))
+        self.assertNotIn("passages", data)
+        self.assertNotIn("List<T>", p.stdout)
+        human = self.cli("info", KEY)
+        self.assertIn("Intro", human.stdout)
+        self.assertNotIn("Cache invalidation", human.stdout)
+
+    def test_markdown_includes_chapter_table_of_contents(self):
+        text = y.markdown(dict(row(), chapters_json=json.dumps([dict(start=0, end=60, title="Intro"), dict(start=60, end=130, title="Main")])))
+        self.assertIn("## Chapters", text)
+        self.assertIn("Intro", text)
+        self.assertLess(text.index("## Chapters"), text.index("## Transcript"))
+
+    def test_search_phrase_requires_adjacent_words(self):
+        conn = self.db()
+        y.save(conn, row([dict(start=0, end=5, text="the software of moats"), dict(start=10, end=15, text="software moats disappeared")]))
+        all_hits = json.loads(self.cli("search", "software", "moats", "--json").stdout)
+        self.assertEqual({r["start"] for r in all_hits}, {0, 10})
+        phrase = json.loads(self.cli("search", "software", "moats", "--match", "phrase", "--json").stdout)
+        self.assertEqual([r["start"] for r in phrase], [10])
+
+    def test_list_includes_dates(self):
+        self.seed()
+        data = json.loads(self.cli("list", "--json").stdout)[0]
+        self.assertEqual(data["uploaded_at"], "2026-01-01")
+        self.assertEqual(data["ingested_at"], "2026-09-07T00:00:00Z")
+
+    def test_long_transcript_warns_without_a_window(self):
+        conn = self.db()
+        y.save(conn, dict(row(), duration_s=1200))
+        p = self.cli("show", KEY)
+        self.assertIn("ytmd info", p.stderr)
+        windowed = self.cli("show", KEY, "--from", "0:00", "--to", "1:00")
+        self.assertNotIn("ytmd info", windowed.stderr)
+        silent = self.cli("show", KEY, "--json")
+        self.assertNotIn("ytmd info", silent.stderr)
 
     def test_doctor_does_not_create_library(self):
         p = self.cli("doctor", "--json")
@@ -330,7 +420,7 @@ if mode:
     print(mode,file=sys.stderr)
     sys.exit(1)
 if '--dump-single-json' in a:
-    print(json.dumps(dict(id='jNQXAC9IVRw', title='Fixture', duration=100, automatic_captions={'en-orig':[{'ext':'json3'}], 'en-de':[{'ext':'json3'}]})))
+    print(json.dumps(dict(id='jNQXAC9IVRw', title='Fixture', duration=100, chapters=[{'start_time':0,'end_time':100,'title':'The only chapter'}], automatic_captions={'en-orig':[{'ext':'json3'}], 'en-de':[{'ext':'json3'}]})))
 else:
     assert a[a.index('--sub-langs')+1] == 'en\\\\-orig'
     assert '--write-auto-subs' in a
@@ -349,7 +439,10 @@ else:
         data = json.loads(p.stdout)
         self.assertEqual(data["captions"], "auto")
         self.assertEqual(data["lang"], "en-orig")
+        self.assertEqual(data["duration_s"], 100)
+        self.assertEqual([c["title"] for c in data["chapters"]], ["The only chapter"])
         self.assertTrue(Path(data["path"]).exists())
+        self.assertIn("## Chapters", Path(data["path"]).read_text())
         conn = self.db()
         saved = conn.execute("SELECT * FROM videos").fetchone()
         self.assertIn("List<T>", saved["raw_captions"])
@@ -363,6 +456,7 @@ else:
         data = json.loads(p.stdout)
         self.assertEqual(data["status"], "saved")
         self.assertEqual(data["passages"][0]["text"], "Store List<T> safely")
+        self.assertEqual([c["title"] for c in data["chapters"]], ["The only chapter"])
         self.assertTrue(Path(data["path"]).exists())
         self.assertEqual(p.stderr, "")
         with patch.dict(os.environ, {"YTMD_TEST_MODE": "network must not be called"}):

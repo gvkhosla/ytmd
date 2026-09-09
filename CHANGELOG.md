@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+- `info VIDEO`: metadata and chapter outline without dumping the transcript.
+- Parse chapters from YouTube/yt-dlp metadata or description timestamps; include them in add/get/show JSON and markdown.
+- `search --match phrase`: require query words to appear adjacently.
+- `list --json` includes `uploaded_at` and `ingested_at`; add/get JSON includes `duration_s`.
+- Warn before printing a long transcript without a time window.
+- Existing libraries gain chapters from saved descriptions (schema 2).
+
 ## 0.3.0
 
 - `get URL`: save once and read in one command, with time-window and JSON support.

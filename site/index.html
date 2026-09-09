@@ -12,18 +12,18 @@
   <meta property="og:title" content="ytmd — YouTube transcripts, ready for your agent">
   <meta property="og:description" content="Save captions. Search passages. Use what you learn. A local CLI for Pi, Codex, Claude Code, and your terminal.">
   <meta property="og:url" content="https://gvkhosla.github.io/ytmd/">
-  <meta property="og:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.3.0">
+  <meta property="og:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.4.0">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="ytmd — YouTube transcripts, ready for your agent. Markdown and SQLite. Local files, no API keys.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="ytmd — YouTube transcripts, ready for your agent">
   <meta name="twitter:description" content="YouTube captions to local markdown and searchable passages. One small CLI.">
-  <meta name="twitter:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.3.0">
+  <meta name="twitter:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.4.0">
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
   <link rel="preload" href="./assets/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./style.css?v=0.3.0">
-  <script src="./app.js?v=0.3.0" defer></script>
+  <link rel="stylesheet" href="./style.css?v=0.4.0">
+  <script src="./app.js?v=0.4.0" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -38,7 +38,7 @@
     <section class="hero" aria-labelledby="hero-title">
       <div class="container hero-grid">
         <div>
-          <p class="eyebrow">A small, open-source CLI · v0.3.0</p>
+          <p class="eyebrow">A small, open-source CLI · v0.4.0</p>
           <h1 id="hero-title">YouTube transcripts,<br>ready for your agent</h1>
           <p class="hero-description">Save a video’s captions as markdown. Search timestamped passages from your coding agent or terminal.</p>
           <p class="hero-note">Local files. No API keys. No model downloads.</p>
@@ -73,7 +73,7 @@
                 <div class="code-heading"><a href="https://brew.sh/">Need Homebrew?</a><button class="copy-button" type="button" data-copy="install-code" data-message="macOS install commands copied." hidden>Copy commands</button></div>
                 <pre tabindex="0" aria-label="macOS install commands"><code id="install-code">brew install python yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor</code></pre>
               </div>
@@ -85,7 +85,7 @@ ytmd doctor</code></pre>
                 <div class="code-heading"><span>Then run</span><button class="copy-button" type="button" data-copy="linux-code" data-message="Linux install commands copied." hidden>Copy commands</button></div>
                 <pre tabindex="0" aria-label="Linux install commands"><code id="linux-code">pipx install yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor</code></pre>
               </div>
@@ -103,10 +103,11 @@ ytmd doctor</code></pre>
         <div class="command-intro"><h3>Or run the commands directly</h3><p>These examples use a real video: Fireship’s <a href="https://www.youtube.com/watch?v=DHjqpvDnNGE">JavaScript in 100 Seconds</a>.</p></div>
         <div class="command-list">
           <div class="command-row"><div><h3>Save and read</h3><p>Fetch once, keep it locally, and print the transcript.</p></div><div class="command-value"><pre tabindex="0" aria-label="Save and read command"><code id="get-command">ytmd get "https://youtu.be/DHjqpvDnNGE"</code></pre><button class="copy-button" type="button" data-copy="get-command" data-message="Save-and-read command copied." hidden>Copy</button></div></div>
+          <div class="command-row"><div><h3>See the outline</h3><p>Metadata and chapters, without the full transcript.</p></div><div class="command-value"><pre tabindex="0" aria-label="Info command"><code id="info-command">ytmd info DHjqpvDnNGE</code></pre><button class="copy-button" type="button" data-copy="info-command" data-message="Outline command copied." hidden>Copy</button></div></div>
           <div class="command-row"><div><h3>Find a passage</h3><p>Search your library and include nearby context.</p></div><div class="command-value"><pre tabindex="0" aria-label="Search command"><code id="search-command">ytmd search "javascript" --context 15 -n 3</code></pre><button class="copy-button" type="button" data-copy="search-command" data-message="Search command copied." hidden>Copy</button></div></div>
           <div class="command-row"><div><h3>Read a time window</h3><p>Get the relevant section, not the entire video.</p></div><div class="command-value"><pre tabindex="0" aria-label="Read a time window command"><code id="show-command">ytmd show DHjqpvDnNGE --from 0:25 --to 0:45</code></pre><button class="copy-button" type="button" data-copy="show-command" data-message="Time-window command copied." hidden>Copy</button></div></div>
         </div>
-        <p class="small command-footnote">Use <code>--json</code> for structured output or <code>get --plain</code> for text without timestamps. <a href="https://github.com/gvkhosla/ytmd#commands">All commands ↗</a></p>
+        <p class="small command-footnote">Use <code>--json</code> for structured output or <code>get --plain</code> for text without timestamps. Prefer <code>info</code> before dumping a long video. <a href="https://github.com/gvkhosla/ytmd#commands">All commands ↗</a></p>
       </div>
     </section>
 
@@ -122,7 +123,7 @@ ytmd doctor</code></pre>
       </div>
     </section>
   </main>
-  <footer class="site-footer"><div class="container footer-inner"><p>ytmd · MIT licensed · Made by <a href="https://github.com/gvkhosla">Geet Khosla</a></p><nav aria-label="Footer navigation"><a href="./llms.txt">Agent guide</a><a href="https://github.com/gvkhosla/ytmd/releases/tag/v0.3.0">v0.3.0</a><a href="https://github.com/gvkhosla/ytmd">GitHub ↗</a></nav></div></footer>
+  <footer class="site-footer"><div class="container footer-inner"><p>ytmd · MIT licensed · Made by <a href="https://github.com/gvkhosla">Geet Khosla</a></p><nav aria-label="Footer navigation"><a href="./llms.txt">Agent guide</a><a href="https://github.com/gvkhosla/ytmd/releases/tag/v0.4.0">v0.4.0</a><a href="https://github.com/gvkhosla/ytmd">GitHub ↗</a></nav></div></footer>
   <noscript><p class="container small">Copy buttons need JavaScript. All instructions and commands above are available as selectable text.</p></noscript>
   <p id="copy-status" class="copy-status" role="status" aria-live="polite"></p>
 </body>

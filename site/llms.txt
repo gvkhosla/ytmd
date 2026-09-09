@@ -4,9 +4,9 @@
 
 Website: https://gvkhosla.github.io/ytmd/
 Source: https://github.com/gvkhosla/ytmd
-Release: https://github.com/gvkhosla/ytmd/releases/tag/v0.3.0
-Agent skill: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/SKILL.md
-Installer to inspect: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh
+Release: https://github.com/gvkhosla/ytmd/releases/tag/v0.4.0
+Agent skill: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.0/SKILL.md
+Installer to inspect: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.0/install.sh
 
 ## Install (only with user permission)
 
@@ -19,7 +19,7 @@ Download and inspect the installer before running it:
 
 ```sh
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.3.0/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor --json
 ```
@@ -35,29 +35,37 @@ Only ingest a video the user asked to save or use. URL and VIDEO_ID below are pl
 
 1. Save without printing the full transcript:
    ytmd add "URL" --json
-   Returns status (saved or existing), id, title, url, path, captions, lang.
+   Returns status (saved or existing), id, title, url, path, captions, lang,
+   duration_s, and chapters: [{start, end, title, url}]. Chapters come from YouTube
+   metadata or timestamp lines in the description; the list may be empty.
    Repeated ingestion reuses the saved track, without another YouTube request.
 
-2. Search the saved video or the entire library:
+2. For long videos, read the outline before any transcript:
+   ytmd info VIDEO_ID --json
+   Returns metadata, path, and chapters without passages. Use chapter timestamps to
+   choose windows. If chapters is empty, search instead of dumping the transcript.
+
+3. Search the saved video or the entire library:
    ytmd search "keywords" --video VIDEO_ID --context 15 -n 5 --json
    Omit --video for library-wide search. Results contain video_id, title, captions,
    lang, caption_format, start, end, text, score, url. With --context, each result
    additionally contains context: {start, end, text, url}. The root fields still
    identify the matching passage. Context can overlap between neighboring hits.
    --context accepts 0–120 seconds on either side. -n accepts 1–100 (default 10).
-   All words must match by default. Use fewer words or --match any for broader results.
+   All words must match by default. Use fewer words, --match any, or --match phrase.
+   --match phrase requires the words to appear next to each other, in order.
    Search is lexical, not semantic. It does not invent answers.
 
-3. Read a relevant window:
+4. Read a relevant window:
    ytmd show VIDEO_ID --from 12:00 --to 15:00 --json
-   Returns metadata, path, duration_s, and passages: [{start, end, text, url}].
+   Returns metadata, path, duration_s, chapters, and passages: [{start, end, text, url}].
    --from and --to accept seconds, MM:SS, or HH:MM:SS. Whole cues overlapping the
    window are included; a sentence can extend slightly past its boundaries.
-   Without a range, show prints the whole transcript. Avoid that for long videos
-   unless a full-video review is requested; read sequential windows instead.
+   Without a range, show prints the whole transcript. Do not do that for long videos
+   unless a full-video review is requested; use info, search, and sequential windows.
 
-4. Cite title and timestamp URL. Distinguish source claims from your own suggestions.
-   Never imply the entire video was reviewed if only a few passages were retrieved.
+5. Cite title and timestamp URL. Distinguish source claims from your own suggestions.
+   Never imply the entire video was reviewed if only chapters or a few passages were retrieved.
 
 ## Other useful commands
 
@@ -68,12 +76,13 @@ Only ingest a video the user asked to save or use. URL and VIDEO_ID below are pl
   --plain also works on show. It cannot be combined with --json.
 - ytmd list "title or channel" --limit 20 --offset 0 --json
   Literal substring filter on title, channel, or ID. Omit query for all videos.
-  Default page size 50; max 100. Use --offset for subsequent pages. Results include local paths.
+  Default page size 50; max 100. Use --offset for subsequent pages. Results include local paths,
+  uploaded_at, and ingested_at.
 - ytmd path --json
   Returns library and database paths. Default ~/ytmd; override with YTMD_DIR.
 - ytmd export
   Rebuild generated markdown from SQLite. An optional directory exports to that folder.
-- ytmd help search (or get, show, list, add)
+- ytmd help search (or get, show, info, list, add)
   Read per-command help.
 - ytmd --version
   Check the installed version.

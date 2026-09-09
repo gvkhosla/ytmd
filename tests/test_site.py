@@ -79,7 +79,7 @@ class LandingPage(unittest.TestCase):
                 self.assertIn(attrs["data-copy"], self.doc.ids)
                 self.assertTrue(self.doc.text[attrs["data-copy"]].strip())
                 copies.append(attrs["data-copy"])
-        self.assertEqual(set(copies), {"install-code", "linux-code", "agent-prompt", "use-prompt", "get-command", "search-command", "show-command"})
+        self.assertEqual(set(copies), {"install-code", "linux-code", "agent-prompt", "use-prompt", "get-command", "info-command", "search-command", "show-command"})
         self.assertEqual(self.doc.ids["copy-status"][1]["role"], "status")
         self.assertEqual(self.doc.ids["copy-status"][1]["aria-live"], "polite")
 
@@ -108,13 +108,13 @@ class LandingPage(unittest.TestCase):
 
     def test_every_copied_example_parses_as_a_cli_command(self):
         cli = runpy.run_path(str(ROOT / "ytmd"), run_name="site_check")
-        for key in ("get-command", "search-command", "show-command"):
+        for key in ("get-command", "info-command", "search-command", "show-command"):
             command = self.doc.text[key].strip()
             self.assertIn(command, self.readme)
             args = shlex.split(command)
             self.assertEqual(args[0], "ytmd")
             parsed = cli["parser"]().parse_args(args[1:])
-            self.assertIn(parsed.command, ("get", "search", "show"))
+            self.assertIn(parsed.command, ("get", "info", "search", "show"))
 
     def test_no_external_scripts_or_stylesheets(self):
         for tag, attrs in self.doc.elements:
