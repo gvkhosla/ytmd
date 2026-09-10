@@ -18,7 +18,7 @@ import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "0.4.1"
+VERSION = "0.4.2"
 SCHEMA = 2
 ID = re.compile(r"[A-Za-z0-9_-]{11}\Z")
 LANG = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -631,7 +631,7 @@ def cmd_list(args):
             ORDER BY ingested_at DESC,id LIMIT ? OFFSET ?""", (term, term, term, args.limit, args.offset))]
     for row in rows:
         row["path"] = str(library() / f"{row['id']}.md")
-    output(rows, args, "\n".join(f"{r['id']}  {r['title']}\n  {r['channel'] or 'Unknown channel'} · {timestamp(r['duration_s']) if r['duration_s'] is not None else 'Unknown duration'}" for r in rows) or "No saved videos match this page. Run: ytmd list or ytmd URL")
+    output(rows, args, "\n".join(f"{r['id']}  {r['title']}\n  {r['channel'] or 'Unknown channel'} · {r['lang'] or '?'} · {timestamp(r['duration_s']) if r['duration_s'] is not None else 'Unknown duration'}" for r in rows) or "No saved videos match this page. Run: ytmd list or ytmd URL")
 
 
 def cmd_export(args):

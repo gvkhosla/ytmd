@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.2
+
+- `ytmd list` shows caption language next to duration (`en · 12:04`).
+
 ## 0.4.1
 
 - `ytmd add URL [URL ...]` saves several videos in one command. Single-URL `--json` shape is unchanged.
