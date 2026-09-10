@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+- `ytmd add URL [URL ...]` saves several videos in one command. Single-URL `--json` shape is unchanged.
+- `ytmd search --channel NAME` restricts hits to that exact channel.
+
 ## 0.4.0
 
 - `info VIDEO`: metadata and chapter outline without dumping the transcript.

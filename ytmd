@@ -18,7 +18,7 @@ import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "0.4.0"
+VERSION = "0.4.1"
 SCHEMA = 2
 ID = re.compile(r"[A-Za-z0-9_-]{11}\Z")
 LANG = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -521,9 +521,20 @@ def ensure_saved(args):
 
 
 def cmd_add(args):
-    row, data = ensure_saved(args)
-    hint = f"Outline: ytmd info {row['id']}" if data["chapters"] else f"Read: ytmd show {row['id']} --from 0:00 --to 1:00"
-    output(data, args, f"{data['status']}: {row['title']}\n{data['path']}\n{hint}")
+    urls = args.urls if getattr(args, "urls", None) else [args.url]
+    results = []
+    texts = []
+    for url in urls:
+        one = argparse.Namespace(**vars(args))
+        one.url = url
+        row, data = ensure_saved(one)
+        results.append(data)
+        hint = f"Outline: ytmd info {row['id']}" if data["chapters"] else f"Read: ytmd show {row['id']} --from 0:00 --to 1:00"
+        texts.append(f"{data['status']}: {row['title']}\n{data['path']}\n{hint}")
+    if args.json:
+        print(json.dumps(results if len(results) > 1 else results[0], ensure_ascii=False, indent=2))
+        return
+    print("\n".join(texts))
 
 
 def window(cues, start, end=None):
@@ -570,11 +581,12 @@ def cmd_search(args):
         query = joiner.join('"' + t + '"' for t in dict.fromkeys(tokens))
     with closing(connect()) as conn:
         key = resolve(conn, args.video)["id"] if args.video else None
+        channel = (args.channel or "").strip() or None
         rows = conn.execute("""SELECT v.id AS video_id,v.title,v.captions,v.lang,v.caption_format,p.start,p.end,p.text,
             bm25(passages_fts) AS score FROM passages_fts
             JOIN passages p ON p.id=passages_fts.rowid JOIN videos v ON v.id=p.video_id
-            WHERE passages_fts MATCH ? AND (? IS NULL OR v.id=?)
-            ORDER BY score,p.video_id,p.start LIMIT ?""", (query, key, key, args.limit)).fetchall()
+            WHERE passages_fts MATCH ? AND (? IS NULL OR v.id=?) AND (? IS NULL OR v.channel = ?)
+            ORDER BY score,p.video_id,p.start LIMIT ?""", (query, key, key, channel, channel, args.limit)).fetchall()
         results = [dict(r, url=url_for(r["video_id"], r["start"])) for r in rows]
         if args.context:
             sources = {}
@@ -715,7 +727,12 @@ def parser():
             s.add_argument("--from", dest="start", type=time_arg, default=0.0)
             s.add_argument("--to", type=time_arg)
         s.set_defaults(handler=handler)
-        if name in ("add", "get"):
+        if name == "add":
+            s.add_argument("urls", nargs="+", metavar="url")
+            s.add_argument("--lang", type=language_arg, default=os.environ.get("YTMD_LANG"), help="one language; default: English then original/manual captions")
+            s.add_argument("--force", action="store_true", help="replace saved captions")
+            s.add_argument("--cookies-from-browser", help="explicit consent to read cookies from this browser")
+        elif name == "get":
             s.add_argument("url")
             s.add_argument("--lang", type=language_arg, default=os.environ.get("YTMD_LANG"), help="one language; default: English then original/manual captions")
             s.add_argument("--force", action="store_true", help="replace saved captions")
@@ -723,6 +740,7 @@ def parser():
         elif name == "search":
             s.add_argument("query", nargs="+")
             s.add_argument("--video", help="restrict to this video ID/title")
+            s.add_argument("--channel", help="restrict to this exact channel name")
             s.add_argument("-n", "--limit", type=positive, default=10)
             s.add_argument("--match", choices=("all", "any", "phrase"), default="all", help="match all query words (default), any of them, or the words as one phrase")
             s.add_argument("--context", type=context_arg, default=0, metavar="SECONDS", help="include 0–120 seconds around each matched passage")

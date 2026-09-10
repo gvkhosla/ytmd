@@ -264,7 +264,7 @@ class StorageAndCLI(Isolated):
         self.assertIn("List&lt;T&gt;", (y.library() / f"{KEY}.md").read_text())
 
     def test_json_errors_no_tracebacks(self):
-        for args in [("search", "test", "-n", "nope"), ("search", "test", "-n", "-1"), ("add", "url", "--lang", "all"), ("add", "url", "extra"), ("show", KEY, "--from", "nan"), ("show", KEY, "--to"), ("list", "--force")]:
+        for args in [("search", "test", "-n", "nope"), ("search", "test", "-n", "-1"), ("add", "url", "--lang", "all"), ("add",), ("get", "url", "extra"), ("show", KEY, "--from", "nan"), ("show", KEY, "--to"), ("list", "--force")]:
             p = self.cli(*args, "--json")
             self.assertEqual(p.returncode, 2, (args, p.stderr))
             self.assertEqual(json.loads(p.stderr)["error"]["code"], "usage")
@@ -308,6 +308,26 @@ class StorageAndCLI(Isolated):
             p = self.cli(*args, "--json")
             self.assertEqual(p.returncode, 2, p.stderr)
             self.assertEqual(json.loads(p.stderr)["error"]["code"], "usage")
+
+    def test_add_accepts_multiple_urls_without_fetching(self):
+        conn = self.seed()
+        extra = dict(row(), id="dQw4w9WgXcQ", title="Another tutorial", channel="Fireship")
+        y.save(conn, extra)
+        p = self.cli("add", KEY, "dQw4w9WgXcQ", "--json")
+        self.assertEqual(p.returncode, 0)
+        data = json.loads(p.stdout)
+        self.assertEqual(len(data), 2)
+        self.assertEqual({item["id"] for item in data}, {KEY, "dQw4w9WgXcQ"})
+        self.assertTrue(all(item["status"] == "existing" for item in data))
+
+    def test_search_can_filter_by_channel(self):
+        conn = self.seed()
+        y.save(conn, dict(row(), id="dQw4w9WgXcQ", title="Another tutorial", channel="Fireship", cues_json=json.dumps([dict(start=0, end=4, text="Cache invalidation requires care.")])))
+        all_hits = json.loads(self.cli("search", "invalidation", "--json").stdout)
+        self.assertGreaterEqual(len(all_hits), 2)
+        fireship = json.loads(self.cli("search", "invalidation", "--channel", "Fireship", "--json").stdout)
+        self.assertTrue(fireship)
+        self.assertTrue(all(hit["video_id"] == "dQw4w9WgXcQ" for hit in fireship))
 
     def test_search_any_broadens_without_changing_default(self):
         self.seed()
