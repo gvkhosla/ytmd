@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.3
+
+- `ytmd search` prints `Next: ytmd show ID --from MM:SS` so a hit becomes a read.
+
 ## 0.4.2
 
 - `ytmd list` shows caption language next to duration (`en · 12:04`).

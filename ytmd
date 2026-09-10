@@ -18,7 +18,7 @@ import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "0.4.2"
+VERSION = "0.4.3"
 SCHEMA = 2
 ID = re.compile(r"[A-Za-z0-9_-]{11}\Z")
 LANG = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -597,7 +597,11 @@ def cmd_search(args):
                 nearby = window(sources[key], max(0, r["start"] - args.context), r["end"] + args.context)
                 if nearby:
                     r["context"] = dict(start=nearby[0]["start"], end=max(c["end"] for c in nearby), text=transcript(nearby), url=url_for(key, nearby[0]["start"]))
-    output(results, args, "\n\n".join(f"{r['video_id']}  {r['title']} [{timestamp(r['start'])}]\n{r.get('context', {}).get('text', r['text'])}\n{r['url']}" for r in results) or "No matches. Try fewer keywords or --match any; search is lexical, not semantic.")
+    text = "\n\n".join(f"{r['video_id']}  {r['title']} [{timestamp(r['start'])}]\n{r.get('context', {}).get('text', r['text'])}\n{r['url']}" for r in results) or "No matches. Try fewer keywords or --match any; search is lexical, not semantic."
+    if results:
+        top = results[0]
+        text += f"\n\nNext: ytmd show {top['video_id']} --from {timestamp(top['start'])}"
+    output(results, args, text)
 
 
 def cmd_show(args):
