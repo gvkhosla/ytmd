@@ -18,7 +18,7 @@ import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "0.4.3"
+VERSION = "0.4.4"
 SCHEMA = 2
 ID = re.compile(r"[A-Za-z0-9_-]{11}\Z")
 LANG = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -275,13 +275,30 @@ def run_ytdlp(args):
     except subprocess.TimeoutExpired:
         raise Error("timeout", "YouTube request timed out. Try again later.")
     if p.returncode:
-        detail = (p.stderr or p.stdout).strip()
-        if "429" in detail or "Too Many Requests" in detail:
-            raise Error("rate_limited", "YouTube rate-limited this request. Wait before retrying; cookies are not a guaranteed fix.")
-        if any(s in detail.lower() for s in ("sign in", "login", "cookies", "private video", "confirm your age")):
-            raise Error("authentication_required", "YouTube requires authentication. If you consent to browser-cookie access, use --cookies-from-browser BROWSER.")
-        raise Error("download_failed", detail[-1500:] or "yt-dlp failed.")
+        ytdlp_error((p.stderr or p.stdout).strip())
     return p.stdout
+
+
+def ytdlp_error(detail):
+    text = (detail or "").lower()
+    if "429" in (detail or "") or "too many requests" in text:
+        raise Error("rate_limited", "YouTube rate-limited this request. Wait before retrying; cookies are not a guaranteed fix.")
+    if any(s in text for s in ("sign in", "login", "cookies", "private video", "confirm your age")):
+        raise Error("authentication_required", "YouTube requires authentication. If you consent to browser-cookie access, use --cookies-from-browser BROWSER.")
+    if any(s in text for s in ("this video is unavailable", "video unavailable", "has been removed", "has been deleted", "video does not exist")):
+        raise Error("video_unavailable", "This YouTube video is unavailable. It may have been deleted, or the ID is wrong.")
+    raise Error("download_failed", (detail or "")[-1500:] or "yt-dlp failed.")
+
+
+def require_available(info, key):
+    availability = (info.get("availability") or "").lower()
+    title = (info.get("title") or "").strip()
+    if availability in ("private", "premium_only", "subscriber_only", "needs_auth") or title.lower() == "[private video]":
+        raise Error("authentication_required", "YouTube requires authentication. If you consent to browser-cookie access, use --cookies-from-browser BROWSER.")
+    stub = title == f"youtube video #{key}" or title.lower() in ("[deleted video]", "[unavailable video]")
+    missing = info.get("duration") is None and not (info.get("channel") or info.get("uploader"))
+    if availability == "unavailable" or stub or missing:
+        raise Error("video_unavailable", "This YouTube video is unavailable. It may have been deleted, or the ID is wrong.")
 
 
 def choose_track(info, language=None):
@@ -313,6 +330,7 @@ def fetch(key, language, browser):
     info = json.loads(run_ytdlp(["--dump-single-json", *cookies, "--", url_for(key)]))
     if info.get("id") != key or info.get("_type") == "playlist":
         raise Error("invalid_video", "YouTube returned an unexpected video.")
+    require_available(info, key)
     lang, source = choose_track(info, language)
     with tempfile.TemporaryDirectory(prefix="ytmd-") as tmp:
         # Exactly one track; no user yt-dlp config, media downloads or exec hooks.

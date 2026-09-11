@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.4
+
+- Classify deleted and missing videos as `video_unavailable` instead of `captions_unavailable`.
+
 ## 0.4.3
 
 - `ytmd search` prints `Next: ytmd show ID --from MM:SS` so a hit becomes a read.

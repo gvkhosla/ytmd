@@ -6,7 +6,7 @@ Save a video's captions as local markdown. Search timestamped passages from Pi,
 Codex, Claude Code, or your terminal. One Python script, SQLite, and yt-dlp.
 No API keys, model downloads, or server. Videos need available captions.
 
-[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.4.0)
+[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.4.4)
 
 ## Install
 
@@ -27,7 +27,7 @@ install the CLI and skill for my agent. Verify with ytmd doctor.
 ```bash
 brew install python yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.0/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.4/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
@@ -37,12 +37,12 @@ ytmd doctor
 ```bash
 pipx install yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.0/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.4/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
 
-[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.4.0/install.sh) before running it.
+[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.4.4/install.sh) before running it.
 It verifies release checksums, installs into `~/.local/bin`, and adds skills for
 Pi/Codex (`~/.agents/skills/ytmd`) and Claude Code (`~/.claude/skills/ytmd`).
 Use `--agent pi`, `codex`, `claude`, or `none` instead of `all` to narrow installation.

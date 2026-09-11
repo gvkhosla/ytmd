@@ -106,6 +106,33 @@ class Parsing(Isolated):
         with self.assertRaises(y.Error):
             y.choose_track(dict(automatic_captions={"zu-fr": fmt}))
 
+    def test_ytdlp_error_classifies_gone_videos(self):
+        cases = {
+            "HTTP Error 429: Too Many Requests": "rate_limited",
+            "Sign in to confirm your age": "authentication_required",
+            "ERROR: [youtube] 7TKqQ2hyM5k: This video is unavailable": "video_unavailable",
+            "ERROR: [youtube] abc: Video unavailable": "video_unavailable",
+            "Extractor exploded": "download_failed",
+        }
+        for detail, code in cases.items():
+            with self.subTest(detail=detail):
+                with self.assertRaises(y.Error) as raised:
+                    y.ytdlp_error(detail)
+                self.assertEqual(raised.exception.code, code)
+
+    def test_unavailable_stub_is_not_caption_less(self):
+        stub = dict(id=KEY, title=f"youtube video #{KEY}", availability=None, duration=None, channel=None, uploader=None)
+        with self.assertRaises(y.Error) as raised:
+            y.require_available(stub, KEY)
+        self.assertEqual(raised.exception.code, "video_unavailable")
+        with self.assertRaises(y.Error) as raised:
+            y.require_available(dict(id=KEY, title="Gone", availability="unavailable", duration=12, channel="Test"), KEY)
+        self.assertEqual(raised.exception.code, "video_unavailable")
+        with self.assertRaises(y.Error) as raised:
+            y.require_available(dict(id=KEY, title="Secret", availability="private", duration=12, channel="Test"), KEY)
+        self.assertEqual(raised.exception.code, "authentication_required")
+        y.require_available(dict(id=KEY, title="A tutorial", duration=130, channel="Test"), KEY)
+
     def test_passages_preserve_text_and_split(self):
         cues = json.loads(row()["cues_json"])
         self.assertEqual(len(y.passages(cues)), 3)
@@ -436,6 +463,9 @@ a=sys.argv[1:]
 assert '--ignore-config' in a
 assert '--skip-download' in a
 mode=os.environ.get('YTMD_TEST_MODE','')
+if mode == 'unavailable-json':
+    print(json.dumps(dict(id='jNQXAC9IVRw', title='youtube video #jNQXAC9IVRw', duration=None)))
+    sys.exit(0)
 if mode:
     print(mode,file=sys.stderr)
     sys.exit(1)
@@ -502,6 +532,16 @@ else:
         with patch.dict(os.environ, {"YTMD_TEST_MODE": "Sign in to confirm your age"}):
             p = self.cli(KEY, "--json")
         self.assertEqual(json.loads(p.stderr)["error"]["code"], "authentication_required")
+
+    def test_gone_video_is_not_reported_as_caption_less(self):
+        with patch.dict(os.environ, {"YTMD_TEST_MODE": "unavailable-json"}):
+            dumped = self.cli(KEY, "--json")
+        self.assertEqual(dumped.returncode, 1)
+        self.assertEqual(json.loads(dumped.stderr)["error"]["code"], "video_unavailable")
+        with patch.dict(os.environ, {"YTMD_TEST_MODE": "ERROR: [youtube] jNQXAC9IVRw: This video is unavailable"}):
+            failed = self.cli(KEY, "--json")
+        self.assertEqual(failed.returncode, 1)
+        self.assertEqual(json.loads(failed.stderr)["error"]["code"], "video_unavailable")
 
 
 class Installer(Isolated):
