@@ -6,7 +6,7 @@ Save a video's captions as local markdown. Search timestamped passages from Pi,
 Codex, Claude Code, or your terminal. One Python script, SQLite, and yt-dlp.
 No API keys, model downloads, or server. Videos need available captions.
 
-[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.4.4)
+[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.4.5)
 
 ## Install
 
@@ -27,7 +27,7 @@ install the CLI and skill for my agent. Verify with ytmd doctor.
 ```bash
 brew install python yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.4/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.5/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
@@ -37,12 +37,12 @@ ytmd doctor
 ```bash
 pipx install yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.4/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.5/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
 
-[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.4.4/install.sh) before running it.
+[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.4.5/install.sh) before running it.
 It verifies release checksums, installs into `~/.local/bin`, and adds skills for
 Pi/Codex (`~/.agents/skills/ytmd`) and Claude Code (`~/.claude/skills/ytmd`).
 Use `--agent pi`, `codex`, `claude`, or `none` instead of `all` to narrow installation.
@@ -96,6 +96,9 @@ Whole cues overlapping a window are included, so a sentence may extend beyond it
 `--match any` broadens this, `--match phrase` requires them in order. Punctuation separates words; FTS operators aren't exposed.
 `--context 0–120` adds that many seconds around each hit. Nearby hits may have overlapping
 context. `-n` limits results (default 10, max 100). `--video` accepts an ID, URL, or unambiguous title.
+Human output suggests a bounded `show --from … --to …` command for the top hit:
+a two-minute window, extended if needed to include the full hit or requested context.
+JSON search output is unchanged.
 
 **List:** optional literal substring filter on title, channel, or ID. Default limit 50,
 max 100. Use `--offset` for subsequent pages. JSON includes local markdown paths, `uploaded_at`, and `ingested_at`.
@@ -115,7 +118,9 @@ returning the wrong language. Only one track is stored per video.
 in plain text. [SKILL.md](SKILL.md) is the installable agent skill.
 
 All data commands support `--json`: one JSON value on stdout, no progress chatter.
-Errors go to stderr:
+Errors go to stderr. `video_unavailable` requires an explicit unavailable status/error
+or an empty extractor stub; missing duration or channel alone is not evidence of deletion.
+`captions_unavailable` means no usable caption track was returned, not proof the video exists:
 
 ```json
 {"error":{"code":"captions_unavailable","message":"..."}}

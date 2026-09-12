@@ -18,7 +18,7 @@ import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "0.4.4"
+VERSION = "0.4.5"
 SCHEMA = 2
 ID = re.compile(r"[A-Za-z0-9_-]{11}\Z")
 LANG = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -297,7 +297,10 @@ def require_available(info, key):
         raise Error("authentication_required", "YouTube requires authentication. If you consent to browser-cookie access, use --cookies-from-browser BROWSER.")
     stub = title == f"youtube video #{key}" or title.lower() in ("[deleted video]", "[unavailable video]")
     missing = info.get("duration") is None and not (info.get("channel") or info.get("uploader"))
-    if availability == "unavailable" or stub or missing:
+    # Missing metadata or a placeholder-like title alone is not proof of deletion.
+    # Only recognize an empty extractor stub; live or caption-bearing results proceed.
+    has_content = any(info.get(field) for field in ("formats", "subtitles", "automatic_captions", "live_status"))
+    if availability == "unavailable" or (stub and missing and not has_content):
         raise Error("video_unavailable", "This YouTube video is unavailable. It may have been deleted, or the ID is wrong.")
 
 
@@ -618,7 +621,10 @@ def cmd_search(args):
     text = "\n\n".join(f"{r['video_id']}  {r['title']} [{timestamp(r['start'])}]\n{r.get('context', {}).get('text', r['text'])}\n{r['url']}" for r in results) or "No matches. Try fewer keywords or --match any; search is lexical, not semantic."
     if results:
         top = results[0]
-        text += f"\n\nNext: ytmd show {top['video_id']} --from {timestamp(top['start'])}"
+        span = top.get("context", top)
+        start = max(0, math.floor(span["start"]))
+        end = max(start + 120, math.ceil(span["end"]))
+        text += f"\n\nNext: ytmd show {top['video_id']} --from {timestamp(start)} --to {timestamp(end)}"
     output(results, args, text)
 
 

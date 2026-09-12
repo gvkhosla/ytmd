@@ -6,6 +6,7 @@ from importlib.machinery import SourceFileLoader
 import json
 import os
 from pathlib import Path
+import shlex
 import sqlite3
 import subprocess
 import sys
@@ -132,6 +133,34 @@ class Parsing(Isolated):
             y.require_available(dict(id=KEY, title="Secret", availability="private", duration=12, channel="Test"), KEY)
         self.assertEqual(raised.exception.code, "authentication_required")
         y.require_available(dict(id=KEY, title="A tutorial", duration=130, channel="Test"), KEY)
+
+    def test_missing_metadata_and_placeholder_titles_are_not_proof_of_deletion(self):
+        placeholder = f"youtube video #{KEY}"
+        cases = [
+            {},
+            dict(title="A tutorial"),
+            dict(title=placeholder, duration=0),
+            dict(title=placeholder, channel="Test"),
+            dict(title=placeholder, uploader="Test"),
+            dict(title=placeholder, formats=[{"format_id": "audio"}]),
+            dict(title=placeholder, subtitles={"en": [{"ext": "vtt"}]}),
+            dict(title=placeholder, automatic_captions={"en-orig": [{"ext": "json3"}]}),
+        ]
+        for info in cases:
+            with self.subTest(info=info):
+                y.require_available(dict(id=KEY, **info), KEY)
+
+    def test_live_metadata_without_duration_is_not_unavailable(self):
+        for status in ("is_live", "is_upcoming", "post_live", "was_live"):
+            with self.subTest(status=status):
+                y.require_available(dict(id=KEY, title=f"youtube video #{KEY}", live_status=status), KEY)
+
+    def test_auth_metadata_takes_precedence_over_empty_stub(self):
+        for availability in ("private", "premium_only", "subscriber_only", "needs_auth"):
+            with self.subTest(availability=availability):
+                with self.assertRaises(y.Error) as raised:
+                    y.require_available(dict(title=f"youtube video #{KEY}", availability=availability), KEY)
+                self.assertEqual(raised.exception.code, "authentication_required")
 
     def test_passages_preserve_text_and_split(self):
         cues = json.loads(row()["cues_json"])
@@ -356,6 +385,42 @@ class StorageAndCLI(Isolated):
         self.assertTrue(fireship)
         self.assertTrue(all(hit["video_id"] == "dQw4w9WgXcQ" for hit in fireship))
 
+    def test_search_next_command_reads_a_bounded_window(self):
+        conn = self.db()
+        y.save(conn, dict(row([
+            dict(start=720.25, end=725.75, text="Needle in a long interview"),
+            dict(start=1500, end=1505, text="Unrelated later section"),
+        ]), duration_s=7200))
+        p = self.cli("search", "needle")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        command = shlex.split(p.stdout.rsplit("Next: ", 1)[1])
+        self.assertEqual(command, ["ytmd", "show", KEY, "--from", "12:00", "--to", "14:00"])
+        read = self.cli(*command[1:], "--json")
+        self.assertEqual(read.returncode, 0, read.stderr)
+        self.assertEqual([c["text"] for c in json.loads(read.stdout)["passages"]], ["Needle in a long interview"])
+        machine = self.cli("search", "needle", "--json")
+        self.assertIsInstance(json.loads(machine.stdout), list)
+        self.assertNotIn("Next:", machine.stdout)
+        self.assertEqual(machine.stderr, "")
+
+    def test_search_next_window_includes_context_and_fractional_end(self):
+        conn = self.db()
+        y.save(conn, row([
+            dict(start=0.25, end=1, text="Opening context"),
+            dict(start=100.25, end=101, text="Needle"),
+            dict(start=200.25, end=201.75, text="Closing context"),
+        ]))
+        p = self.cli("search", "needle", "--context", "120")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn(f"Next: ytmd show {KEY} --from 0:00 --to 3:22", p.stdout)
+
+    def test_search_next_window_includes_long_matching_cue(self):
+        conn = self.db()
+        y.save(conn, row([dict(start=0.25, end=180.75, text="Needle")]))
+        p = self.cli("search", "needle")
+        self.assertIn(f"Next: ytmd show {KEY} --from 0:00 --to 3:01", p.stdout)
+        self.assertNotIn("Next:", self.cli("search", "unmatched").stdout)
+
     def test_search_any_broadens_without_changing_default(self):
         self.seed()
         self.assertEqual(json.loads(self.cli("search", "cache unicorn", "--json").stdout), [])
@@ -463,6 +528,12 @@ a=sys.argv[1:]
 assert '--ignore-config' in a
 assert '--skip-download' in a
 mode=os.environ.get('YTMD_TEST_MODE','')
+if mode == 'captionless-json':
+    print(json.dumps(dict(id='jNQXAC9IVRw', title='Real video', duration=100, channel='Test', subtitles={}, automatic_captions={})))
+    sys.exit(0)
+if mode == 'incomplete-json':
+    print(json.dumps(dict(id='jNQXAC9IVRw', title='Incomplete metadata', subtitles={}, automatic_captions={})))
+    sys.exit(0)
 if mode == 'unavailable-json':
     print(json.dumps(dict(id='jNQXAC9IVRw', title='youtube video #jNQXAC9IVRw', duration=None)))
     sys.exit(0)
@@ -532,6 +603,15 @@ else:
         with patch.dict(os.environ, {"YTMD_TEST_MODE": "Sign in to confirm your age"}):
             p = self.cli(KEY, "--json")
         self.assertEqual(json.loads(p.stderr)["error"]["code"], "authentication_required")
+
+    def test_missing_captions_are_not_reported_as_a_gone_video(self):
+        for mode in ("captionless-json", "incomplete-json"):
+            with self.subTest(mode=mode), patch.dict(os.environ, {"YTMD_TEST_MODE": mode}):
+                p = self.cli(KEY, "--json")
+                self.assertEqual(p.returncode, 1)
+                self.assertEqual(p.stdout, "")
+                self.assertEqual(json.loads(p.stderr)["error"]["code"], "captions_unavailable")
+                self.assertFalse((y.library() / f"{KEY}.md").exists())
 
     def test_gone_video_is_not_reported_as_caption_less(self):
         with patch.dict(os.environ, {"YTMD_TEST_MODE": "unavailable-json"}):

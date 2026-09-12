@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.5
+
+- Do not classify missing metadata or placeholder-like titles alone as unavailable videos; allow live and caption-bearing metadata through.
+- Search suggests a bounded `show --from … --to …` window, including the top hit and requested context. JSON output is unchanged.
+
 ## 0.4.4
 
 - Classify deleted and missing videos as `video_unavailable` instead of `captions_unavailable`.

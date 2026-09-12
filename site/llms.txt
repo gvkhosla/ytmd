@@ -4,9 +4,9 @@
 
 Website: https://gvkhosla.github.io/ytmd/
 Source: https://github.com/gvkhosla/ytmd
-Release: https://github.com/gvkhosla/ytmd/releases/tag/v0.4.4
-Agent skill: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.4/SKILL.md
-Installer to inspect: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.4/install.sh
+Release: https://github.com/gvkhosla/ytmd/releases/tag/v0.4.5
+Agent skill: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.5/SKILL.md
+Installer to inspect: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.5/install.sh
 
 ## Install (only with user permission)
 
@@ -19,7 +19,7 @@ Download and inspect the installer before running it:
 
 ```sh
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.4/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.5/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor --json
 ```
@@ -97,8 +97,10 @@ with ok: false and exits 1 if dependencies are missing. --help/--version are pla
 
 - rate_limited: wait before retrying. Do not loop or assume cookies will fix it.
 - authentication_required: ask explicit permission before --cookies-from-browser BROWSER.
-- video_unavailable: the video is gone or the ID is wrong. Do not treat it as caption-less or retry.
-- captions_unavailable: the video exists but has no usable captions. Caption-less videos are unsupported.
+- video_unavailable: YouTube reports unavailability or returns an empty extractor stub.
+  Do not infer the exact cause or automatically retry.
+- captions_unavailable: no usable caption track was returned; this does not prove the video exists.
+  Caption-less videos are unsupported.
 - language_mismatch: a saved track differs from --lang. Read it without --lang or ask
   before --force replaces it. Only one language is stored per video.
 - export_failed: the transcript is already in SQLite; repair markdown with ytmd export.
