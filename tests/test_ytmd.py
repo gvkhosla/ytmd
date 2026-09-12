@@ -688,6 +688,9 @@ class Installer(Isolated):
         result = subprocess.run([str(cli), "--version"], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(y.VERSION, result.stdout)
+        help_text = subprocess.run([str(cli), "help"], capture_output=True, text=True).stdout
+        for name in ("map", "bundle", "verify", "import"):
+            self.assertIn(name, help_text)
         self.assertFalse(y.library().exists())
 
     def test_remote_install_verifies_payload(self):

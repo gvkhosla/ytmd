@@ -43,7 +43,7 @@ Name: ytmd. Open source, MIT licensed. Voice should be direct and factual. The u
 - `examples/README.md`: real-video entry points plus explicitly labelled synthetic workflow references; neither is a measured model-quality result.
 - `evals/cases.json`: synthetic teaching transcript for offline retrieval tests, not landing-page proof.
 - `evals/README.md`: retrieval checks and a separate unscored answer-quality rubric.
-- 131 automated tests passed for v0.5.0; CI passed on macOS/Linux and Python 3.9/3.13.
+- 186 automated tests passed for v0.6.0; retrieval evals remain separate from agent-answer quality.
 - No customer testimonials, adoption claims, or independent agent-quality benchmark results to publish.
 - The user's local video library is private and must not become website demo material without permission.
 

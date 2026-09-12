@@ -21,6 +21,14 @@ passages, not measured agent outcomes, endorsements, or full-video reviews.
 | [Miles Grimshaw on Dialectic](https://www.youtube.com/watch?v=MZ14rrkHVbg) | Stress-test our startup’s moat |
 | [Brian Chesky on Invest Like the Best](https://www.youtube.com/watch?v=eURcW5_uS60) | Make onboarding worth remembering |
 
+Research across several saved videos:
+
+```bash
+ytmd map VIDEO_ID --json
+ytmd bundle VIDEO_A VIDEO_B VIDEO_C --query "term" --query "exception" --out ./research/topic.evidence.json --json
+ytmd verify ./research/topic.evidence.json --json
+```
+
 Paste a video URL and your own task into Pi, Codex, or Claude Code with the ytmd skill.
 Ask it to explain the reasoning, read prerequisites and exceptions, cite timestamps,
 and distinguish the speaker’s claims from proposed adaptations.

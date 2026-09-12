@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0
+
+- `map ID`: chapter map, or deterministic 5-minute time sections when a video has no chapters, with shared preview budgets and executable read commands.
+- `bundle ID ID --query WORDS`: explicit multi-video lexical evidence bundles, fair source budgets, stable evidence references, and optional atomic `--out` files.
+- `verify FILE`: source-text verification of saved bundles and optional exact quotes. Distinguishes missing, stale, mismatched, and unverified quotes.
+- `import FILE --video ID`: save local VTT, JSON3, or SRT captions without a network fetch. User-supplied provenance; existing tracks require `--force`.
+- Additive `id`/`ref` on `read` and `context` evidence. No database migration; schema 2 unchanged.
+- Agent skill routes multi-video research, resume-from-file, and quote verification. Retrieval still does not score model answers.
+
 ## 0.5.0
 
 - Goal-aware agent skill: help users understand, learn, or apply ideas at task-appropriate depth, with source claims separated from adaptations.
