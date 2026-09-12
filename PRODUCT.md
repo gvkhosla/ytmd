@@ -39,8 +39,9 @@ Name: ytmd. Open source, MIT licensed. Voice should be direct and factual. The u
 
 ## Evidence on Hand
 
-- `examples/README.md`: authored synthetic understand/learn/apply responses, not measured model outputs.
-- `evals/cases.json`: synthetic teaching transcript with timestamps; safe to publish as a labelled illustration.
+- `examples/videos.json`: six user-requested real video examples, with short verified caption quotes, timestamp URLs, selective coverage, and explicitly adapted plans. Publisher thumbnails identify linked sources, not endorsements.
+- `examples/README.md`: real-video entry points plus explicitly labelled synthetic workflow references; neither is a measured model-quality result.
+- `evals/cases.json`: synthetic teaching transcript for offline retrieval tests, not landing-page proof.
 - `evals/README.md`: retrieval checks and a separate unscored answer-quality rubric.
 - 131 automated tests passed for v0.5.0; CI passed on macOS/Linux and Python 3.9/3.13.
 - No customer testimonials, adoption claims, or independent agent-quality benchmark results to publish.

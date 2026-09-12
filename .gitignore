@@ -6,6 +6,7 @@ __pycache__/
 *.db-wal
 .impeccable/review/
 .impeccable/references/
+.impeccable/research/
 .impeccable/questions/
 .impeccable/mocks/
 .impeccable/direction-options.json

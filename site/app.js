@@ -1,24 +1,17 @@
 'use strict';
 
-// Static example and instructions. JavaScript only reveals citations and helps copy text.
+// Static examples and instructions. JavaScript only opens deep links and helps copy text.
 function reveal(target) {
   for (let details = target.closest('details'); details; details = details.parentElement.closest('details')) {
     details.open = true;
   }
 }
 
-for (const link of document.querySelectorAll('.citation')) {
-  link.addEventListener('click', () => {
-    const target = document.getElementById(link.hash.slice(1));
-    if (target) reveal(target);
-    // Keep native fragment navigation, focus, and browser history.
-  });
-}
 function revealFragment() {
   const target = document.getElementById(location.hash.slice(1));
   if (!target) return;
   reveal(target);
-  if (target.matches('.sources article')) target.focus();
+  if (target.matches('.evidence')) target.focus();
 }
 revealFragment();
 window.addEventListener('hashchange', revealFragment);

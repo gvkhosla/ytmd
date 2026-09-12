@@ -4,32 +4,32 @@
   "extensions": {
     "shadows": [{"name": "feedback", "value": "0 8px 24px rgb(0 0 0 / 15%)", "purpose": "Copy feedback only."}],
     "motion": [{"name": "source-navigation", "value": "smooth", "purpose": "Native fragment scrolling; auto under reduced motion."}],
-    "breakpoints": [{"name": "mobile", "value": "600px"}]
+    "breakpoints": [{"name": "mobile", "value": "600px"}, {"name": "tablet", "value": "900px"}]
   },
   "components": [
     {
       "name": "Setup action", "kind": "button", "refersTo": "button-primary",
       "description": "The only primary action on the page.",
       "html": "<button class=\"ds-primary\">Copy setup prompt</button>",
-      "css": ".ds-primary { font: 550 15px InterVariable, system-ui, sans-serif; color: white; background: var(--green); min-height: 50px; padding: 12px 24px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; } .ds-primary:hover { background: var(--green-hover); } .ds-primary:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; } .ds-primary:disabled { opacity: .65; cursor: wait; }"
+      "css": ".ds-primary { font: 550 15px InterVariable, system-ui, sans-serif; color: var(--on-green); background: var(--green); min-height: 50px; padding: 12px 24px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; } .ds-primary:hover { background: var(--green-hover); } .ds-primary:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; } .ds-primary:disabled { opacity: .65; cursor: wait; }"
     },
     {
       "name": "Source citation", "kind": "custom", "refersTo": "citation",
-      "description": "A timestamp opens its source passage.",
-      "html": "<a class=\"ds-citation\" href=\"#ds-source\">1:00</a><p id=\"ds-source\">Synthetic source passage.</p>",
-      "css": ".ds-citation { display: inline-flex; align-items: center; min-height: 28px; padding: 0 6px; font: 500 13px/1.5 monospace; color: var(--green); background: var(--selected); border-radius: 3px; text-underline-offset: 3px; } .ds-citation:hover { color: white; background: var(--green); } .ds-citation:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; }"
+      "description": "A timestamp opens the cited moment on YouTube.",
+      "html": "<a class=\"ds-citation\" href=\"https://www.youtube.com/watch?v=D7_ipDqhtwk&amp;t=346s\">5:46</a><p>They're models using tools in a loop.</p>",
+      "css": ".ds-citation { display: inline-flex; align-items: center; min-height: 32px; padding: 0 6px; font: 500 13px/1.5 monospace; color: var(--green); background: var(--selected); border-radius: 3px; text-underline-offset: 3px; } .ds-citation:hover { color: var(--on-green); background: var(--green); } .ds-citation:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; }"
     },
     {
       "name": "Native disclosure", "kind": "custom",
       "description": "Secondary text is available on demand, without JavaScript.",
       "html": "<details class=\"ds-details\"><summary>View setup instructions</summary><p>Copy the setup prompt into your existing agent.</p></details>",
-      "css": ".ds-details { color: var(--ink); font: 15px/1.65 InterVariable, system-ui, sans-serif; } .ds-details summary { color: var(--muted); min-height: 44px; padding: 10px 0; cursor: pointer; font-size: 14px; } .ds-details summary:hover { color: var(--green); } .ds-details summary:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; }"
+      "css": ".ds-details { color: var(--ink); font: 15px/1.65 InterVariable, system-ui, sans-serif; } .ds-details summary { color: var(--green); min-height: 44px; padding: 10px 0; cursor: pointer; font-size: 13px; } .ds-details summary:hover { color: var(--green); } .ds-details summary:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; }"
     }
   ],
   "narrative": {
-    "northStar": "The source review, distilled",
-    "overview": "The user rejected the previous site's complexity and noisy copy. Keep the established cool paper, navy text, green actions, and condensed display face; remove competing demonstrations and secondary surfaces. Show one task and its useful answer. Evidence stays inspectable without being permanently on screen.",
-    "dos": ["Do explain one concrete use case before offering more choices.", "Do keep exact source quotes and required limitations available.", "Do make the next action obvious and singular."],
+    "northStar": "Real videos, useful outcomes",
+    "overview": "Six real video thumbnails, concrete tasks, and concise results in the established paper/navy/green identity. A local-workflow outline explains Markdown and SQLite FTS5. Plans and exact evidence stay behind native disclosures. The header theme utility follows system preference and remembers an explicit choice.",
+    "dos": ["Do pair each video with one concrete task and short useful result.", "Do keep exact source quotes and required limitations available.", "Do make the next action obvious and singular."],
     "donts": ["Don't restore the source sidebar, mode tabs, repeated marketing sections, or inline command catalog.", "Don't remove provenance labels to achieve a smaller word count."]
   }
 }

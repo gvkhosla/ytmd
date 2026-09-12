@@ -1,8 +1,38 @@
 # From a video to something useful
 
-ytmd supplies source evidence. Your existing agent explains it at the depth your task needs.
-These workflows work in Pi, Codex, or Claude Code with the installed skill. Replace `URL` and
-`VIDEO_ID` with your requested video; `read` and `context` operate on saved captions only.
+ytmd supplies source evidence. Your existing agent explains and adapts it.
+
+## Six real starting points
+
+The [website](https://gvkhosla.github.io/ytmd/) shows each video’s short result,
+expandable three-step plan, exact caption excerpts, timestamp links, and reading coverage.
+The curated source is [videos.json](videos.json). These are adaptations from selected
+passages, not measured agent outcomes, endorsements, or full-video reviews.
+
+| Technical | Task |
+| --- | --- |
+| [Barry Zhang — effective agents](https://www.youtube.com/watch?v=D7_ipDqhtwk) | Simplify my agent architecture |
+| [OpenAI’s Arrakis sandbox talk](https://www.youtube.com/watch?v=wsFd22SL1s8) | Choose my agent’s sandbox |
+| [LangChain × Manus — context engineering](https://www.youtube.com/watch?v=6_BcCthVvb8) | Shrink context without losing it |
+
+| Business | Task |
+| --- | --- |
+| [Patrick Collison on Dwarkesh](https://www.youtube.com/watch?v=WU-lBOAS1VQ) | Stop relitigating team decisions |
+| [Miles Grimshaw on Dialectic](https://www.youtube.com/watch?v=MZ14rrkHVbg) | Stress-test our startup’s moat |
+| [Brian Chesky on Invest Like the Best](https://www.youtube.com/watch?v=eURcW5_uS60) | Make onboarding worth remembering |
+
+Paste a video URL and your own task into Pi, Codex, or Claude Code with the ytmd skill.
+Ask it to explain the reasoning, read prerequisites and exceptions, cite timestamps,
+and distinguish the speaker’s claims from proposed adaptations.
+
+## Reference workflows (synthetic teaching material)
+
+The older cache examples below deliberately use the labelled evaluation fixture,
+not a real video. They document retrieval mechanics and the expected answer shape;
+they are not the website’s demonstration material.
+
+Replace `URL` and `VIDEO_ID` with your requested video. `read` and `context` operate
+on saved captions only.
 
 ## 1. Understand before investing an hour
 

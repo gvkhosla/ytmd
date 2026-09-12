@@ -2,33 +2,52 @@
 version: 1
 slug: "site-index-html"
 primary_target: "site/index.html"
-related_targets: ["site/style.css", "site/app.js"]
+related_targets: ["site/style.css", "site/app.js", "site/theme.js", "examples/videos.json"]
 ---
 
-# Landing page: one useful example
+# Landing page: real videos, useful outcomes
 
-Mode: Persuade. Existing agent users; no standalone web app.
+Mode: Persuade. Existing Pi, Codex, and Claude Code users; not a standalone AI app.
 
-The user selected source review (seed 2e028c93), then rejected the shipped page as messy and noisy. Their latest instruction takes precedence: focus on the key use case, show it simply, and reduce copy. This is a distillation of the existing world, not another identity round.
+## Latest user direction
 
-## Direction contract
+The single synthetic demo is superseded by six real videos: three technical and
+three business, including Dwarkesh and the supplied Miles Grimshaw episode. The
+user explicitly asked for thumbnails and a simple, compelling outline of the
+local Markdown/SQLite workflow. Preserve the earlier insistence on concise copy.
 
-THESIS: A video plus a task produces practical next steps with inspectable timestamps. One example, one setup action.
+THESIS: Recognizable videos become concrete work, not another transcript dump.
 
-OWN-WORLD: Retain cool paper, navy ink, green citations/actions, Barlow Semi Condensed display, and Inter body. Remove colored marketing regions and dense structural chrome.
+OWN-WORLD: Keep cool paper, navy ink, green actions, Barlow display, and Inter body.
+Real publisher thumbnails supply the visual weight; no new identity round.
 
-STORY: Understand the offer, read one short application example, optionally inspect a source, copy the setup prompt into an existing agent.
+STORY: Understand the outcome and local workflow, browse six task/results, inspect
+an adapted plan and timestamp evidence, copy setup into an existing agent.
 
-FIRST VIEWPORT: One left-aligned 680px column. Headline and one supporting sentence; one question with three next steps; timestamps reveal exact source text. A short, user-requested technical explanation (local SQLite, Markdown, and full-text search) precedes setup. No tabs, sidebar, feature tour, or permanently visible source transcript.
+FIRST VIEWPORT: Wide two-column hero with one copy action and local Markdown/SQLite
+in the introduction, then three prominent video thumbnails. The mechanism outline
+follows the gallery so mobile visitors see a real thumbnail without scrolling first.
 
-FORM: The previously user-selected source review, narrowed by explicit user feedback. Evidence moves behind native disclosure. No new seed or new visual world is needed for this scoped distillation.
+FORM: Flat three-across video gallery in two groups; two columns on tablet, one on
+mobile. No source sidebar, tabs, carousels, fake playback, or live AI simulation.
+Native disclosures keep detailed plans and evidence out of the default view.
 
-FINISH: Browser checks, truthful demo labels, current DESIGN.md, and verified deployment. Preserve exact quotes, caption requirements, and no-JavaScript access.
+FINISH: Verify real source quotes, source URLs, captions/coverage labels, image
+loading, local-only resource requests, keyboard, clipboard recovery, no-JS paths,
+responsive layouts, and deployment. No external reviewer score is invented.
 
-## Removed complexity
+## Theme
 
-Removed Understand/Learn/Apply switching, eight-passage sidebar, adaptation callout, workflow section, large green setup region, FAQ stack, and eight competing copy controls. These are marketing-surface cuts, not removed CLI features. Full examples, terminal installation, commands, and safety details remain in linked README/agent documentation.
+The user requested a dark-mode toggle after the gallery pass. Preserve cool navy
+and green, with separate dark semantic tokens (not inverted photographs). The header
+utility follows the system until a manual choice, then persists only that preference
+in localStorage. A small pre-CSS script avoids a light flash. CSS follows system dark
+mode without JS; no inert toggle is shown. Storage denial must remain usable.
 
-## Verification
+## Copy and proof
 
-Default page contains 166 rendered words and one copy button, including the user's requested plain-language product and technical explanations. Tests cap default copy at 230 words to discourage renewed accumulation. Desktop, mobile, small mobile, 200%-equivalent layout, native citations, keyboard, clipboard success/denial, deep links, and no-JavaScript navigation are covered.
+400-word default-copy ceiling for six examples, replacing the one-demo 230-word
+budget. Result text is at most 25 words per video. Plans are explicitly adaptations
+from selected captions, not measured outputs or full-video reviews. Local storage
+and retrieval do not imply the user's model is local. Full transcripts stay out of
+Git and the user's private library is not used as demo material.

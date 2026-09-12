@@ -53,6 +53,7 @@ class LandingPage(unittest.TestCase):
         cls.doc = Document()
         cls.doc.feed((SITE / "index.html").read_text())
         cls.readme = (ROOT / "README.md").read_text()
+        cls.videos = json.loads((ROOT / 'examples/videos.json').read_text())['videos']
 
     def test_local_assets_and_anchors_exist(self):
         for tag, attrs in self.doc.elements:
@@ -118,7 +119,7 @@ class LandingPage(unittest.TestCase):
 
     def test_no_external_scripts_or_stylesheets(self):
         for tag, attrs in self.doc.elements:
-            if tag == "script" or (tag == "link" and attrs.get("rel") in ("stylesheet", "preload")):
+            if tag in ("script", "img", "iframe") or (tag == "link" and attrs.get("rel") in ("stylesheet", "preload")):
                 resource = attrs.get("src", attrs.get("href", ""))
                 self.assertFalse(urlparse(resource).netloc, resource)
 
@@ -144,7 +145,7 @@ class LandingPage(unittest.TestCase):
 
     def test_v05_task_prompt_and_discovery_links(self):
         text = (SITE / "index.html").read_text()
-        self.assertIn('ytmd gives your AI agent YouTube captions.', self.doc.text['main'])
+        self.assertIn('ytmd gives your AI agent YouTube captions, saved as local Markdown + SQLite.', self.doc.text['main'])
         self.assertIn('not just a summary', self.doc.text['main'])
         structured = re.search(r'<script type="application/ld\+json">(.*?)</script>', text).group(1)
         schema = json.loads(structured)
@@ -155,33 +156,54 @@ class LandingPage(unittest.TestCase):
         self.assertTrue((ROOT / "evals/README.md").exists())
         self.assertIn("https://gvkhosla.github.io/ytmd/", (SITE / "sitemap.xml").read_text())
 
-    def test_demo_quotes_match_the_public_synthetic_fixture(self):
-        fixture = json.loads((ROOT / 'evals/cases.json').read_text())
-        selected = [cue for cue in fixture['video']['cues'] if f"quote-{cue['start']}" in self.doc.ids]
-        self.assertEqual(len(selected), 3)
-        for cue in selected:
-            self.assertEqual(self.doc.text[f"quote-{cue['start']}"], cue['text'])
-        self.assertIn('synthetic lesson', self.doc.text['use'])
-        self.assertIn('not live AI output', self.doc.text['use'])
-        self.assertIn('not a full review', self.doc.text['use'])
+    def test_six_real_videos_have_balanced_categories_and_quotes(self):
+        self.assertEqual(len(self.videos), 6)
+        self.assertEqual(len({v['id'] for v in self.videos}), 6)
+        self.assertEqual(sum(v['category'] == 'technical' for v in self.videos), 3)
+        self.assertEqual(sum(v['category'] == 'business' for v in self.videos), 3)
+        self.assertIn('MZ14rrkHVbg', {v['id'] for v in self.videos})
+        self.assertIn('Dwarkesh Patel', {v['channel'] for v in self.videos})
+        for video in self.videos:
+            self.assertRegex(video['id'], r'^[A-Za-z0-9_-]{11}$')
+            evidence = self.doc.text['evidence-' + video['id']]
+            for excerpt in video['evidence']:
+                self.assertIn(excerpt['quote'], evidence)
+                self.assertGreaterEqual(excerpt['start'], 0)
+                self.assertLess(excerpt['start'], video['duration_s'])
+            self.assertLessEqual(sum(len(e['quote'].split()) for e in video['evidence']), 60)
+            self.assertIn(video['coverage'], evidence)
+            self.assertIn('captions; may contain errors.', evidence)
+            self.assertEqual(len(video['plan']), 3)
+            self.assertLessEqual(len(video['result'].split()), 25)
+            image = SITE / 'assets/videos' / (video['id'] + '.jpg')
+            self.assertEqual(image.read_bytes()[:2], b'\xff\xd8')
+            self.assertLess(image.stat().st_size, 150000)
+        self.assertNotIn('synthetic', self.doc.text['use'])
+        self.assertIn('Plans are our adaptations', self.doc.text['use'])
+        self.assertIn('not speaker instructions or full-video reviews', self.doc.text['use'])
 
-    def test_single_example_has_three_inspectable_citations(self):
-        text = (SITE / 'index.html').read_text()
-        citations = re.findall(r'class="citation" href="#([^"]+)"', text)
-        self.assertEqual(citations, ['source-60', 'source-120', 'source-240'])
-        for source in citations:
-            self.assertIn(source, self.doc.ids)
-            self.assertNotIn('hidden', self.doc.ids[source][1])
-        self.assertEqual(self.doc.ids['sources'][0], 'details')
-        self.assertNotIn('open', self.doc.ids['sources'][1])
-        self.assertNotIn('role="tab"', text)
+    def test_real_timestamps_and_native_disclosures(self):
+        citations = [a['href'] for tag, a in self.doc.elements if a.get('class') == 'citation']
+        expected = [f"https://www.youtube.com/watch?v={v['id']}&t={int(e['start'])}s"
+                    for v in self.videos for e in v['evidence']]
+        self.assertEqual(citations, expected)
+        for video in self.videos:
+            tag, attrs = self.doc.ids['plan-' + video['id']]
+            self.assertEqual(tag, 'details')
+            self.assertNotIn('open', attrs)
+            self.assertNotIn('hidden', attrs)
+        self.assertNotIn('role="tab"', (SITE / 'index.html').read_text())
+
+    def test_static_examples_match_the_renderer(self):
+        renderer = runpy.run_path(str(ROOT / 'tools/render_examples.py'), run_name='site_check')
+        self.assertIn(renderer['render'](), (SITE / 'index.html').read_text())
 
     def test_demo_precedes_installation_and_keeps_terminal_optional(self):
         text = (SITE / 'index.html').read_text()
         self.assertLess(text.index('id="use"'), text.index('id="install"'))
         self.assertEqual(self.doc.ids['install'][0], 'details')
         self.assertNotIn('<input', text, 'Do not imply this static site accepts videos')
-        self.assertLess(len(self.doc.text['main'].split()), 500, 'Keep even expanded page copy concise')
+        self.assertLess(len(self.doc.text['main'].split()), 1300, 'Six expanded plans must still stay concise')
         script = (SITE / 'app.js').read_text()
         self.assertNotIn('fetch(', script)
         self.assertNotIn('.innerHTML', script)
@@ -190,11 +212,26 @@ class LandingPage(unittest.TestCase):
         text = (SITE / 'index.html').read_text()
         section = re.search(r'<section class="how-it-works"[^>]*>(.*?)</section>', text, re.S).group(1)
         words = re.sub(r'<[^>]+>', ' ', section).split()
-        self.assertLessEqual(len(words), 40)
-        for term in ('SQLite', 'Markdown', 'Full-text search', 'timestamped'):
+        self.assertLessEqual(len(words), 80)
+        for term in ('SQLite', 'Markdown', 'Full-text search', 'Timestamped', 'FTS5', 'offline'):
             self.assertIn(term, section)
+        self.assertIn('Your agent’s model may run elsewhere.', section)
         self.assertLess(text.index('id="use"'), text.index('class="how-it-works"'))
         self.assertLess(text.index('class="how-it-works"'), text.index('class="setup"'))
+
+    def test_theme_bootstraps_before_styles_and_has_accessible_toggle(self):
+        text = (SITE / 'index.html').read_text()
+        self.assertLess(text.index('src="./theme.js'), text.index('rel="stylesheet"'))
+        tag, attrs = self.doc.ids['theme-toggle']
+        self.assertEqual(tag, 'button')
+        self.assertEqual(attrs['type'], 'button')
+        self.assertEqual(attrs['aria-label'], 'Switch to dark mode')
+        self.assertIn('hidden', attrs, 'No inert toggle when JavaScript is disabled')
+        self.assertIn('prefers-color-scheme: dark', (SITE / 'style.css').read_text())
+        script = (SITE / 'theme.js').read_text()
+        self.assertIn("localStorage.setItem('ytmd-theme'", script)
+        self.assertNotIn('fetch(', script)
+        self.assertNotIn('.innerHTML', script)
 
     def test_display_font_is_self_hosted_and_licensed(self):
         self.assertTrue((SITE / 'assets/BarlowSemiCondensed-SemiBold.ttf').exists())

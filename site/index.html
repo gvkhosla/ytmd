@@ -4,67 +4,231 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4f6fa">
-  <title>ytmd — Put YouTube ideas to work</title>
+  <meta name="color-scheme" content="light dark">
+  <script src="./theme.js?v=0.5.0-videos1"></script>
+  <title>ytmd — Put YouTube videos to work</title>
   <meta name="description" content="Give your agent a YouTube video and a task. Get practical next steps, with timestamps you can check. For Pi, Codex, and Claude Code.">
   <link rel="canonical" href="https://gvkhosla.github.io/ytmd/">
   <link rel="alternate" type="text/plain" title="Agent instructions" href="./llms.txt">
   <link rel="sitemap" type="application/xml" href="./sitemap.xml">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="ytmd — Put YouTube ideas to work">
+  <meta property="og:title" content="ytmd — Put YouTube videos to work">
   <meta property="og:description" content="A video and a task. Practical next steps, with timestamps. For your existing Pi, Codex, or Claude Code agent.">
   <meta property="og:url" content="https://gvkhosla.github.io/ytmd/">
-  <meta property="og:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.5.0-simple1">
+  <meta property="og:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.5.0-videos1">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ytmd — Put YouTube ideas to work. One video, a task, and an illustrative plan with timestamps.">
+  <meta property="og:image:alt" content="Put YouTube videos to work. Six real video thumbnails. Local Markdown and SQLite, with evidence for your agent.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="ytmd — Put YouTube ideas to work">
+  <meta name="twitter:title" content="ytmd — Put YouTube videos to work">
   <meta name="twitter:description" content="Give your agent a video and a task. Get practical next steps with timestamps you can check.">
-  <meta name="twitter:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.5.0-simple1">
+  <meta name="twitter:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.5.0-videos1">
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
   <link rel="preload" href="./assets/BarlowSemiCondensed-SemiBold.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="./assets/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./style.css?v=0.5.0-simple2">
-  <script src="./app.js?v=0.5.0-simple1" defer></script>
+  <link rel="stylesheet" href="./style.css?v=0.5.0-videos1">
+  <script src="./app.js?v=0.5.0-videos1" defer></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"ytmd","url":"https://gvkhosla.github.io/ytmd/","description":"Local captions, chapter reads, and timestamped evidence for understanding and applying YouTube videos with an existing agent.","applicationCategory":"DeveloperApplication","operatingSystem":"macOS, Linux","softwareVersion":"0.5.0","license":"https://github.com/gvkhosla/ytmd/blob/v0.5.0/LICENSE","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header page-width">
     <a class="brand" href="./" aria-label="ytmd homepage"><img src="./assets/wordmark.svg" width="94" height="29" alt="ytmd"></a>
-    <a href="https://github.com/gvkhosla/ytmd">GitHub</a>
+    <nav class="header-actions" aria-label="Site">
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" hidden>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path class="theme-moon" d="M20.8 13.2A9 9 0 0 1 10.8 3.2a9 9 0 1 0 10 10Z"/>
+          <g class="theme-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g>
+        </svg>
+      </button>
+      <a href="https://github.com/gvkhosla/ytmd">GitHub</a>
+    </nav>
   </header>
   <main id="main" class="page-width">
     <section class="intro" aria-labelledby="hero-title">
       <h1 id="hero-title">Put YouTube videos<br>to work</h1>
-      <p>ytmd gives your AI agent YouTube captions. Turn a video’s ideas into a plan for your project, with timestamps—not just a summary.</p>
+      <div class="pitch">
+        <p>ytmd gives your AI agent YouTube captions, saved as local Markdown + SQLite. Turn a video into a plan with timestamps—not just a summary.</p>
+        <button class="button" type="button" data-copy="agent-prompt" hidden>Copy setup prompt</button>
+        <p class="compatibility">For Pi, Codex, and Claude Code.</p>
+        <noscript><a href="#install">Set up ytmd</a></noscript>
+      </div>
     </section>
 
-    <section class="example" id="use" aria-label="Example: apply a video to your app">
-      <p class="question">“Help me use this video’s caching idea in my app.”</p>
-      <ol class="answer">
-        <li><h2>Choose a safe place to start.</h2><p>Use it where slightly old data is okay, not for permission checks. <a class="citation" href="#source-60" aria-label="Read source at 1:00">1:00</a></p></li>
-        <li><h2>Try it on 5% of traffic.</h2><p>Compare cached and uncached results first. Keep an off switch. <a class="citation" href="#source-120" aria-label="Read source at 2:00">2:00</a></p></li>
-        <li><h2>Know when to roll back.</h2><p>If errors rise by more than one percentage point, turn the cache off. <a class="citation" href="#source-240" aria-label="Read source at 4:00">4:00</a></p></li>
+    <!-- BEGIN VIDEO EXAMPLES -->
+    <section id="use" aria-label="Real video examples">
+      <section class="video-group" aria-labelledby="technical-title">
+        <h2 id="technical-title">For builders</h2>
+        <div class="video-grid">
+          <article class="video" aria-labelledby="task-D7_ipDqhtwk">
+            <a class="thumbnail" href="https://www.youtube.com/watch?v=D7_ipDqhtwk" aria-label="Watch How We Build Effective Agents: Barry Zhang, Anthropic on YouTube">
+              <img src="./assets/videos/D7_ipDqhtwk.jpg" width="320" height="180" loading="lazy" decoding="async" alt="">
+              <svg class="play" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><path d="M12 8l13 8-13 8z"/></svg>
+              <span class="duration" aria-hidden="true">15:09</span>
+            </a>
+            <p class="byline">Barry Zhang · Anthropic</p>
+            <h3 id="task-D7_ipDqhtwk">Simplify my agent architecture</h3>
+            <p class="result">Start with an environment, tools, and a prompt. Add complexity only after the basic loop works.</p>
+            <details class="plan" id="plan-D7_ipDqhtwk">
+              <summary>See the plan &amp; sources</summary>
+              <p class="plan-label">Suggested next steps</p>
+              <ol>
+                <li>Define the environment, available tools, goals, and stopping conditions.</li>
+                <li>Start with one model–tool loop. Inspect the feedback each tool returns.</li>
+                <li>Test representative tasks before adding routing, memory, or parallel agents.</li>
+              </ol>
+              <div class="evidence" id="evidence-D7_ipDqhtwk" tabindex="-1">
+                <p class="source-title"><a href="https://www.youtube.com/watch?v=D7_ipDqhtwk">How We Build Effective Agents: Barry Zhang, Anthropic</a></p>
+                <blockquote><p><q>They&#x27;re models using tools in a loop.</q> <a class="citation" href="https://www.youtube.com/watch?v=D7_ipDqhtwk&amp;t=346s" aria-label="Watch source at 5:46">5:46</a></p></blockquote>
+                <blockquote><p><q>any complexity up front is really going to kill iteration speed.</q> <a class="citation" href="https://www.youtube.com/watch?v=D7_ipDqhtwk&amp;t=378s" aria-label="Watch source at 6:18">6:18</a></p></blockquote>
+                <p class="coverage">Selected search passages about simplicity, tools, and agent loops; not the full talk. Automatic captions; may contain errors.</p>
+              </div>
+            </details>
+          </article>
+          <article class="video" aria-labelledby="task-wsFd22SL1s8">
+            <a class="thumbnail" href="https://www.youtube.com/watch?v=wsFd22SL1s8" aria-label="Watch Arrakis: How To Build An AI Sandbox From Scratch - Abhishek Bhardwaj, OpenAI on YouTube">
+              <img src="./assets/videos/wsFd22SL1s8.jpg" width="320" height="180" loading="lazy" decoding="async" alt="">
+              <svg class="play" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><path d="M12 8l13 8-13 8z"/></svg>
+              <span class="duration" aria-hidden="true">40:18</span>
+            </a>
+            <p class="byline">Abhishek Bhardwaj · OpenAI</p>
+            <h3 id="task-wsFd22SL1s8">Choose my agent’s sandbox</h3>
+            <p class="result">Compare shared-kernel containers with microVM isolation. Include GPU needs and snapshot/restore—not just startup speed.</p>
+            <details class="plan" id="plan-wsFd22SL1s8">
+              <summary>See the plan &amp; sources</summary>
+              <p class="plan-label">Suggested next steps</p>
+              <ol>
+                <li>Define what untrusted code must not access: host data, credentials, and network destinations.</li>
+                <li>Compare isolation boundaries, GPU support, and I/O costs for your workload.</li>
+                <li>Prototype snapshot, execute, and restore. Verify state recovery and cleanup with a failing task.</li>
+              </ol>
+              <div class="evidence" id="evidence-wsFd22SL1s8" tabindex="-1">
+                <p class="source-title"><a href="https://www.youtube.com/watch?v=wsFd22SL1s8">Arrakis: How To Build An AI Sandbox From Scratch - Abhishek Bhardwaj, OpenAI</a></p>
+                <blockquote><p><q>each VM has its own guest user space and guest kernel.</q> <a class="citation" href="https://www.youtube.com/watch?v=wsFd22SL1s8&amp;t=874s" aria-label="Watch source at 14:34">14:34</a></p></blockquote>
+                <blockquote><p><q>you do get GPU access more easily in G Visor and containers versus like microVMs</q> <a class="citation" href="https://www.youtube.com/watch?v=wsFd22SL1s8&amp;t=1402s" aria-label="Watch source at 23:22">23:22</a></p></blockquote>
+                <p class="coverage">Selected passages on isolation, security trade-offs, and snapshot/restore. The search bundle was budget-limited; not a full architecture review. Automatic captions; may contain errors.</p>
+              </div>
+            </details>
+          </article>
+          <article class="video" aria-labelledby="task-6_BcCthVvb8">
+            <a class="thumbnail" href="https://www.youtube.com/watch?v=6_BcCthVvb8" aria-label="Watch Context Engineering for AI Agents with LangChain and Manus on YouTube">
+              <img src="./assets/videos/6_BcCthVvb8.jpg" width="320" height="180" loading="lazy" decoding="async" alt="">
+              <svg class="play" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><path d="M12 8l13 8-13 8z"/></svg>
+              <span class="duration" aria-hidden="true">1:00:53</span>
+            </a>
+            <p class="byline">LangChain × Manus</p>
+            <h3 id="task-6_BcCthVvb8">Shrink context without losing it</h3>
+            <p class="result">Keep bulky tool results in files and their paths in context. Recover the originals instead of trusting a lossy summary.</p>
+            <details class="plan" id="plan-6_BcCthVvb8">
+              <summary>See the plan &amp; sources</summary>
+              <p class="plan-label">Suggested next steps</p>
+              <ol>
+                <li>Persist bulky results; keep paths so the agent can retrieve the originals.</li>
+                <li>Compact older calls first. Retain recent complete tool examples.</li>
+                <li>Evaluate task success and missing-field errors before turning to lossy summaries.</li>
+              </ol>
+              <div class="evidence" id="evidence-6_BcCthVvb8" tabindex="-1">
+                <p class="source-title"><a href="https://www.youtube.com/watch?v=6_BcCthVvb8">Context Engineering for AI Agents with LangChain and Manus</a></p>
+                <blockquote><p><q>drop the super long content field and just keep the path.</q> <a class="citation" href="https://www.youtube.com/watch?v=6_BcCthVvb8&amp;t=954s" aria-label="Watch source at 15:54">15:54</a></p></blockquote>
+                <blockquote><p><q>we still like keep the last few tool calls and tool results in full detail</q> <a class="citation" href="https://www.youtube.com/watch?v=6_BcCthVvb8&amp;t=1127s" aria-label="Watch source at 18:47">18:47</a></p></blockquote>
+                <p class="coverage">Chapter 4, Context reduction in Manus, read completely. Adjacent overlapping caption cues included; not the full conversation. Automatic captions; may contain errors.</p>
+              </div>
+            </details>
+          </article>
+        </div>
+      </section>
+      <section class="video-group" aria-labelledby="business-title">
+        <h2 id="business-title">For business</h2>
+        <div class="video-grid">
+          <article class="video" aria-labelledby="task-WU-lBOAS1VQ">
+            <a class="thumbnail" href="https://www.youtube.com/watch?v=WU-lBOAS1VQ" aria-label="Watch Patrick Collison — Why Silicon Valley&#x27;s most talented should leave on YouTube">
+              <img src="./assets/videos/WU-lBOAS1VQ.jpg" width="320" height="180" loading="lazy" decoding="async" alt="">
+              <svg class="play" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><path d="M12 8l13 8-13 8z"/></svg>
+              <span class="duration" aria-hidden="true">1:55:31</span>
+            </a>
+            <p class="byline">Patrick Collison · Dwarkesh</p>
+            <h3 id="task-WU-lBOAS1VQ">Stop relitigating team decisions</h3>
+            <p class="result">Write down the decision and its reasoning. Future teammates inherit the context, not another meeting.</p>
+            <details class="plan" id="plan-WU-lBOAS1VQ">
+              <summary>See the plan &amp; sources</summary>
+              <p class="plan-label">Suggested next steps</p>
+              <ol>
+                <li>Pick a recurring decision your team keeps reopening.</li>
+                <li>Write a one-page note: options, rationale, owner, and a revisit trigger.</li>
+                <li>Ask someone outside the meeting to explain the decision using only that note.</li>
+              </ol>
+              <div class="evidence" id="evidence-WU-lBOAS1VQ" tabindex="-1">
+                <p class="source-title"><a href="https://www.youtube.com/watch?v=WU-lBOAS1VQ">Patrick Collison — Why Silicon Valley&#x27;s most talented should leave</a></p>
+                <blockquote><p><q>I and lots of people write things in order to organize one&#x27;s own thoughts.</q> <a class="citation" href="https://www.youtube.com/watch?v=WU-lBOAS1VQ&amp;t=5368s" aria-label="Watch source at 1:29:28">1:29:28</a></p></blockquote>
+                <p class="coverage">The requested 1:29:02–1:34:02 window on Stripe’s writing culture and internal LLM tools, including overlapping caption cues. Not the full interview. Creator-provided captions; may contain errors.</p>
+              </div>
+            </details>
+          </article>
+          <article class="video" aria-labelledby="task-MZ14rrkHVbg">
+            <a class="thumbnail" href="https://www.youtube.com/watch?v=MZ14rrkHVbg" aria-label="Watch Thrive Capital’s Miles Grimshaw: Why Software Moats Just Disappeared on YouTube">
+              <img src="./assets/videos/MZ14rrkHVbg.jpg" width="320" height="180" loading="lazy" decoding="async" alt="">
+              <svg class="play" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><path d="M12 8l13 8-13 8z"/></svg>
+              <span class="duration" aria-hidden="true">1:53:08</span>
+            </a>
+            <p class="byline">Miles Grimshaw · Dialectic</p>
+            <h3 id="task-MZ14rrkHVbg">Stress-test our startup’s moat</h3>
+            <p class="result">Separate features a rival can rebuild from the customer relationships they still have to earn.</p>
+            <details class="plan" id="plan-MZ14rrkHVbg">
+              <summary>See the plan &amp; sources</summary>
+              <p class="plan-label">Suggested next steps</p>
+              <ol>
+                <li>List the features a well-funded rival could recreate with today’s tools.</li>
+                <li>Identify customers and ecosystem relationships that a replica would still have to win.</li>
+                <li>Try one customer-specific feature; check whether customers value it enough to stay.</li>
+              </ol>
+              <div class="evidence" id="evidence-MZ14rrkHVbg" tabindex="-1">
+                <p class="source-title"><a href="https://www.youtube.com/watch?v=MZ14rrkHVbg">Thrive Capital’s Miles Grimshaw: Why Software Moats Just Disappeared</a></p>
+                <blockquote><p><q>Might not have any residents yet, but you can build that city.</q> <a class="citation" href="https://www.youtube.com/watch?v=MZ14rrkHVbg&amp;t=3444s" aria-label="Watch source at 57:24">57:24</a></p></blockquote>
+                <blockquote><p><q>companies now should say yes to like one customer&#x27;s needed feature.</q> <a class="citation" href="https://www.youtube.com/watch?v=MZ14rrkHVbg&amp;t=3714s" aria-label="Watch source at 1:01:54">1:01:54</a></p></blockquote>
+                <p class="coverage">The requested 54:25–1:03:30 window on software moats and bespoke features, including overlapping caption cues. An investor’s thesis, not a verified forecast or full interview review. Creator-provided captions; may contain errors.</p>
+              </div>
+            </details>
+          </article>
+          <article class="video" aria-labelledby="task-eURcW5_uS60">
+            <a class="thumbnail" href="https://www.youtube.com/watch?v=eURcW5_uS60" aria-label="Watch How Brian Chesky Is Redesigning Airbnb for the AI Era on YouTube">
+              <img src="./assets/videos/eURcW5_uS60.jpg" width="320" height="180" loading="lazy" decoding="async" alt="">
+              <svg class="play" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><path d="M12 8l13 8-13 8z"/></svg>
+              <span class="duration" aria-hidden="true">1:23:28</span>
+            </a>
+            <p class="byline">Brian Chesky · Invest Like the Best</p>
+            <h3 id="task-eURcW5_uS60">Make onboarding worth remembering</h3>
+            <p class="result">Imagine an absurdly great first experience. Work backwards to one improvement you can actually deliver.</p>
+            <details class="plan" id="plan-eURcW5_uS60">
+              <summary>See the plan &amp; sources</summary>
+              <p class="plan-label">Suggested next steps</p>
+              <ol>
+                <li>Pick one moment: a customer’s first successful use.</li>
+                <li>Sketch a five-star, seven-star, and absurd eleven-star version.</li>
+                <li>Work backwards to one affordable delight. Test it with a customer before scaling.</li>
+              </ol>
+              <div class="evidence" id="evidence-eURcW5_uS60" tabindex="-1">
+                <p class="source-title"><a href="https://www.youtube.com/watch?v=eURcW5_uS60">How Brian Chesky Is Redesigning Airbnb for the AI Era</a></p>
+                <blockquote><p><q>you keep pushing to go so absurd to 10 stars that suddenly six or seven stars doesn&#x27;t seem crazy at all.</q> <a class="citation" href="https://www.youtube.com/watch?v=eURcW5_uS60&amp;t=2356s" aria-label="Watch source at 39:16">39:16</a></p></blockquote>
+                <p class="coverage">Chapter 7, The 11-Star Experience, read completely. Adjacent overlapping caption cues included; not the full interview or a guarantee of product-market fit. Automatic captions; may contain errors.</p>
+              </div>
+            </details>
+          </article>
+        </div>
+      </section>
+      <p class="example-note">Worked examples from selected captions. Plans are our adaptations, not speaker instructions or full-video reviews.</p>
+    </section>
+    <!-- END VIDEO EXAMPLES -->
+
+    <section class="how-it-works" aria-label="Why local retrieval works better">
+      <ol class="pipeline">
+        <li><h2>Save once</h2><p>Captions in <strong>Markdown + SQLite.</strong><br>Your files, readable offline.</p></li>
+        <li><h2>Search locally</h2><p><strong>Full-text search with SQLite FTS5.</strong><br>No repeat downloads. No vector service.</p></li>
+        <li><h2>Read what matters</h2><p><strong>Timestamped passages, not a transcript dump.</strong><br>Your agent supplies the reasoning.</p></li>
       </ol>
-      <p class="example-note">Illustrative answer from a synthetic lesson, not live AI output.</p>
-      <details class="sources" id="sources">
-        <summary>Read the source passages</summary>
-        <article id="source-60" tabindex="-1"><h3>1:00 · Prerequisites</h3><p id="quote-60">Prerequisites: measure baseline latency and errors, and confirm that this endpoint permits data up to thirty seconds old. Never use this recipe for authorization decisions.</p></article>
-        <article id="source-120" tabindex="-1"><h3>2:00 · Rollout</h3><p id="quote-120">Rollout procedure: shadow reads first, compare the cached and uncached responses, then enable caching for five percent of traffic behind a reversible flag.</p></article>
-        <article id="source-240" tabindex="-1"><h3>4:00 · Rollback</h3><p id="quote-240">Rollback condition: if the error rate increases by more than one percentage point over baseline, disable the flag and restore uncached reads. Keep monitoring after rollback.</p></article>
-        <p class="source-note">Three selected passages, not a full review. <a href="https://github.com/gvkhosla/ytmd/blob/v0.5.0/evals/cases.json">Full synthetic lesson</a>.</p>
-      </details>
-    </section>
-
-    <section class="how-it-works" aria-labelledby="how-title">
-      <h2 id="how-title">Fetch once. Search locally.</h2>
-      <p>Captions are stored in local SQLite and exported as Markdown. Full-text search finds timestamped passages, so your agent can read only what it needs.</p>
+      <p class="local-note">Storage and retrieval run on your machine. Your agent’s model may run elsewhere.</p>
     </section>
 
     <section class="setup" aria-label="Set up ytmd">
-      <button class="button" type="button" data-copy="agent-prompt" hidden>Copy setup prompt</button>
-      <p class="compatibility">Paste into Pi, Codex, or Claude Code.</p>
       <details id="install">
         <summary>View setup instructions</summary>
         <p id="agent-prompt">Install ytmd using https://gvkhosla.github.io/ytmd/llms.txt. Read the instructions and installer first. Check dependencies, ask before making system changes, and install the CLI and skill for my agent. Verify with ytmd doctor.</p>
@@ -74,7 +238,7 @@
       <p class="requirements">Free and open source. Videos need available captions.</p>
     </section>
   </main>
-  <footer class="site-footer page-width"><nav aria-label="Documentation"><a href="./llms.txt">Agent guide</a><a href="https://github.com/gvkhosla/ytmd/blob/v0.5.0/examples/README.md">More examples</a></nav><a href="https://github.com/gvkhosla/ytmd/releases/tag/v0.5.0">v0.5.0 · MIT</a></footer>
+  <footer class="site-footer page-width"><nav aria-label="Documentation"><a href="./llms.txt">Agent guide</a><a href="https://github.com/gvkhosla/ytmd/blob/main/examples/README.md">More examples</a></nav><a href="https://github.com/gvkhosla/ytmd/releases/tag/v0.5.0">v0.5.0 · MIT</a></footer>
   <noscript><p class="page-width no-script">Open “View setup instructions” to copy the prompt manually.</p></noscript>
   <p id="copy-status" class="copy-status" role="status" aria-live="polite"></p>
 </body>

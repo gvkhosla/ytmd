@@ -9,6 +9,17 @@ colors:
   green-hover: "#124b43"
   line: "#d7dfe7"
   selected: "#e3eee8"
+  on-green: "#ffffff"
+  overlay: "#172638"
+  on-overlay: "#ffffff"
+  dark-paper: "#101820"
+  dark-ink: "#e6edf5"
+  dark-muted: "#a6b5c5"
+  dark-green: "#8ed4bd"
+  dark-green-hover: "#b5e6d6"
+  dark-line: "#344453"
+  dark-selected: "#203b36"
+  dark-on-green: "#102820"
 typography:
   display:
     fontFamily: "'Barlow Semi Condensed', sans-serif"
@@ -33,6 +44,17 @@ typography:
   note:
     fontFamily: "InterVariable, system-ui, sans-serif"
     fontSize: "13px"
+  group:
+    fontFamily: "InterVariable, system-ui, sans-serif"
+    fontSize: "20px"
+    fontWeight: 600
+  task-mobile:
+    fontFamily: "InterVariable, system-ui, sans-serif"
+    fontSize: "18px"
+    fontWeight: 600
+  metadata:
+    fontFamily: "InterVariable, system-ui, sans-serif"
+    fontSize: "12px"
 rounded:
   citation: "3px"
   control: "4px"
@@ -59,23 +81,25 @@ components:
 
 ## Overview
 
-**Creative North Star: "The source review, distilled"**
+**Creative North Star: "Real videos, useful outcomes"**
 
-The user rejected the previous site's complexity and noisy copy. Keep the established cool paper, navy text, green actions, and condensed display face; remove competing demonstrations and secondary surfaces. Show one task and its useful answer. Evidence stays inspectable without being permanently on screen.
+The user replaced the single synthetic lesson with six real videos and requested prominent thumbnails, a short local-workflow outline, and a dark-mode toggle. Keep the established paper/navy/green/condensed-display identity and concise voice. Actual publisher imagery carries the visual weight. Every video has a task and short useful result; detailed plans and evidence remain optional.
 
 ## Colors
 
-Green is reserved for the setup action, timestamps, and focus. Cool neutrals carry everything else. Source passages get a gentle tonal change when selected. No large colored marketing sections are needed.
+Green marks actions, timestamps, focus, and the three mechanism steps. Cool neutrals carry everything else. No large colored marketing sections.
+
+Dark mode maps semantic roles to deep navy paper, pale ink, cool muted text, and mint green. Buttons use dark text on mint, not white; thumbnail overlays retain their own navy/white pair. The logo reverses to monochrome white, never the photographs. Both themes’ text/action pairs are checked against 4.5:1 AA contrast.
 
 ## Typography
 
-Self-hosted Barlow Semi Condensed supplies the single large headline. Self-hosted Inter supplies reading and controls. Monospace is used only for timestamps. The introduction becomes 16px below 600px. Compact labels stay subordinate; the headline supplies the large hierarchy step.
+Self-hosted Barlow Semi Condensed supplies the large headline. Inter supplies reading and controls. Monospace is only for timestamps and video durations. Group headings are 20px; task headings are 17px (18px on mobile), results 14px (15px on mobile). Source/coverage labels remain subordinate. The introduction becomes 16px below 600px.
 
 ## Layout
 
-One left-aligned column, at most 680px wide. Viewport gutters are 24px, falling to 20px below 600px. The flow is offer, one example, setup, then documentation links. The setup button spans the column on small screens.
+A 1080px maximum canvas with 24px gutters, falling to 20px below 600px. A two-column hero places the offer beside its explanation and the sole setup-copy action. The gallery has three columns above 900px, two on tablet, one below 600px, grouped as three builder and three business videos. Each image is 16:9. No card frames or nested panels.
 
-No sidebar, task tabs, nested review grid, fixed-height source scroller, or feature tour. Additional evidence and setup text use native disclosures; CLI commands remain in linked documentation.
+The mechanism outline follows the gallery so a real thumbnail appears in the initial mobile viewport. Setup instructions and documentation follow. No sidebar, tabs, carousel, fixed-height source scroller, or command catalog. Native disclosures reveal each plan and its sources. Default page copy stays below 400 words for all six examples.
 
 ## Elevation & Depth
 
@@ -83,25 +107,29 @@ Flat surfaces with spacing and occasional thin boundaries. Only copy feedback fl
 
 ## Shapes
 
-Small-radius controls and a simple question surface. Native disclosure markers remain native. The three numbered steps communicate a procedure rather than decorating sections.
+Four-pixel control/thumbnail radii and native disclosure markers. Three numbered steps inside each plan communicate the proposed sequence. The source image is the artifact, not a decorative container. Theme icons are matching authored SVG strokes.
 
 ## Components
 
 ### Setup action
 
-One green button copies the existing setup prompt. Success leaves instructions collapsed; failure opens them and selects the text for manual copying. No-JavaScript users can open and copy the instructions directly.
+One green hero button copies the existing setup prompt. Success leaves instructions collapsed; failure opens them and selects the text for manual copying. No-JavaScript users get a hero setup link and native instructions. The separate header theme utility is not a competing primary action.
 
 ### Source citations
 
-Real fragment links open the source disclosure and focus their exact passage. Native history and keyboard navigation remain intact. Source text is not truncated or nested inside another scroller.
+Real YouTube timestamps accompany short exact caption quotes. The full title, caption provenance, and selective reading coverage stay with the evidence. Direct `#evidence-VIDEO_ID` links open the corresponding plan and focus its evidence; no nested scroller.
 
 ### Disclosures
 
-Source passages and setup instructions are the only disclosures. The source is visibly labelled synthetic; the expanded view explains selective coverage. No account, URL-input, or simulated processing state is introduced.
+Six plan/source disclosures and setup instructions. The visible note identifies plans as adaptations, not speaker instructions or full reviews. No account, URL input, or simulated processing state.
+
+### Theme utility
+
+A labelled 44px header button follows system preference until the user chooses light or dark. A small pre-CSS script applies the saved `ytmd-theme` value without a light flash. Only this preference is persisted. Blocked storage leaves the current session usable. Without JS, CSS follows system dark mode and the inert toggle stays hidden.
 
 ## Do's and Don'ts
 
-- **Do** explain one concrete use case before offering more choices.
+- **Do** pair each real video with one concrete task and short useful result.
 - **Do** keep exact source quotes and required limitations available.
 - **Do** make the next action obvious and singular.
 - **Don't** restore the source sidebar, mode tabs, repeated marketing sections, or inline command catalog.
