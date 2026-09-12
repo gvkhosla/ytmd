@@ -19,7 +19,7 @@ OWN-WORLD: Retain cool paper, navy ink, green citations/actions, Barlow Semi Con
 
 STORY: Understand the offer, read one short application example, optionally inspect a source, copy the setup prompt into an existing agent.
 
-FIRST VIEWPORT: One left-aligned 680px column. Headline and one supporting sentence; one question with three next steps; timestamps reveal exact source text. Setup follows immediately. No tabs, sidebar, feature tour, or permanently visible source transcript.
+FIRST VIEWPORT: One left-aligned 680px column. Headline and one supporting sentence; one question with three next steps; timestamps reveal exact source text. A short, user-requested technical explanation (local SQLite, Markdown, and full-text search) precedes setup. No tabs, sidebar, feature tour, or permanently visible source transcript.
 
 FORM: The previously user-selected source review, narrowed by explicit user feedback. Evidence moves behind native disclosure. No new seed or new visual world is needed for this scoped distillation.
 
@@ -31,4 +31,4 @@ Removed Understand/Learn/Apply switching, eight-passage sidebar, adaptation call
 
 ## Verification
 
-Default page contains 138 rendered words and one copy button, including the user's requested plain-language product explanation. Tests cap default copy at 230 words to discourage renewed accumulation. Desktop, mobile, small mobile, 200%-equivalent layout, native citations, keyboard, clipboard success/denial, deep links, and no-JavaScript navigation are covered.
+Default page contains 166 rendered words and one copy button, including the user's requested plain-language product and technical explanations. Tests cap default copy at 230 words to discourage renewed accumulation. Desktop, mobile, small mobile, 200%-equivalent layout, native citations, keyboard, clipboard success/denial, deep links, and no-JavaScript navigation are covered.

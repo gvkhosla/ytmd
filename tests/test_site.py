@@ -186,6 +186,16 @@ class LandingPage(unittest.TestCase):
         self.assertNotIn('fetch(', script)
         self.assertNotIn('.innerHTML', script)
 
+    def test_technical_explanation_is_short_and_specific(self):
+        text = (SITE / 'index.html').read_text()
+        section = re.search(r'<section class="how-it-works"[^>]*>(.*?)</section>', text, re.S).group(1)
+        words = re.sub(r'<[^>]+>', ' ', section).split()
+        self.assertLessEqual(len(words), 40)
+        for term in ('SQLite', 'Markdown', 'Full-text search', 'timestamped'):
+            self.assertIn(term, section)
+        self.assertLess(text.index('id="use"'), text.index('class="how-it-works"'))
+        self.assertLess(text.index('class="how-it-works"'), text.index('class="setup"'))
+
     def test_display_font_is_self_hosted_and_licensed(self):
         self.assertTrue((SITE / 'assets/BarlowSemiCondensed-SemiBold.ttf').exists())
         self.assertIn('SIL OPEN FONT LICENSE', (SITE / 'assets/Barlow-OFL.txt').read_text())

@@ -24,7 +24,7 @@
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
   <link rel="preload" href="./assets/BarlowSemiCondensed-SemiBold.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="./assets/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./style.css?v=0.5.0-simple1">
+  <link rel="stylesheet" href="./style.css?v=0.5.0-simple2">
   <script src="./app.js?v=0.5.0-simple1" defer></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"ytmd","url":"https://gvkhosla.github.io/ytmd/","description":"Local captions, chapter reads, and timestamped evidence for understanding and applying YouTube videos with an existing agent.","applicationCategory":"DeveloperApplication","operatingSystem":"macOS, Linux","softwareVersion":"0.5.0","license":"https://github.com/gvkhosla/ytmd/blob/v0.5.0/LICENSE","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
 </head>
@@ -55,6 +55,11 @@
         <article id="source-240" tabindex="-1"><h3>4:00 · Rollback</h3><p id="quote-240">Rollback condition: if the error rate increases by more than one percentage point over baseline, disable the flag and restore uncached reads. Keep monitoring after rollback.</p></article>
         <p class="source-note">Three selected passages, not a full review. <a href="https://github.com/gvkhosla/ytmd/blob/v0.5.0/evals/cases.json">Full synthetic lesson</a>.</p>
       </details>
+    </section>
+
+    <section class="how-it-works" aria-labelledby="how-title">
+      <h2 id="how-title">Fetch once. Search locally.</h2>
+      <p>Captions are stored in local SQLite and exported as Markdown. Full-text search finds timestamped passages, so your agent can read only what it needs.</p>
     </section>
 
     <section class="setup" aria-label="Set up ytmd">
