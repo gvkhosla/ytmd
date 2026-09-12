@@ -4,9 +4,9 @@
 
 Website: https://gvkhosla.github.io/ytmd/
 Source: https://github.com/gvkhosla/ytmd
-Release: https://github.com/gvkhosla/ytmd/releases/tag/v0.4.6
-Agent skill: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.6/SKILL.md
-Installer to inspect: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.6/install.sh
+Release: https://github.com/gvkhosla/ytmd/releases/tag/v0.4.7
+Agent skill: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.7/SKILL.md
+Installer to inspect: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.7/install.sh
 
 ## Install (only with user permission)
 
@@ -19,7 +19,7 @@ Download and inspect the installer before running it:
 
 ```sh
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.6/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.7/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor --json
 ```
@@ -103,6 +103,13 @@ on stderr (per-input batch errors are included in the stdout array instead):
 No progress chatter in JSON mode. Exit 0 = success (including existing/no matches),
 1 = operational failure, 2 = usage error. doctor --json instead returns diagnostics
 with ok: false and exits 1 if dependencies are missing. --help/--version are plain text.
+Doctor also includes executable (resolved running CLI), ytmd_on_path (ordered {path, resolved}
+entries), yt_dlp_version, yt_dlp_age_days, and warnings: [{code, message}]. Version/age can be null.
+Warnings are advisory: multiple_installations, yt_dlp_outdated (older than 90 days), or
+yt_dlp_version_unknown. The local version command has a five-second timeout and ignores
+user yt-dlp config. ok checks minimum dependencies only, not YouTube connectivity.
+No network health checks, automatic updates, PATH edits, or library creation. Ask before
+updating dependencies or changing PATH.
 
 - rate_limited: wait before retrying. Do not loop or assume cookies will fix it.
 - authentication_required: ask explicit permission before --cookies-from-browser BROWSER.

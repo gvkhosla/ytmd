@@ -6,7 +6,7 @@ Save a video's captions as local markdown. Search timestamped passages from Pi,
 Codex, Claude Code, or your terminal. One Python script, SQLite, and yt-dlp.
 No API keys, model downloads, or server. Videos need available captions.
 
-[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.4.6)
+[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.4.7)
 
 ## Install
 
@@ -27,7 +27,7 @@ install the CLI and skill for my agent. Verify with ytmd doctor.
 ```bash
 brew install python yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.6/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.7/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
@@ -37,12 +37,12 @@ ytmd doctor
 ```bash
 pipx install yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.6/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.7/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
 
-[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.4.6/install.sh) before running it.
+[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.4.7/install.sh) before running it.
 It verifies release checksums, installs into `~/.local/bin`, and adds skills for
 Pi/Codex (`~/.agents/skills/ytmd`) and Claude Code (`~/.claude/skills/ytmd`).
 Use `--agent pi`, `codex`, `claude`, or `none` instead of `all` to narrow installation.
@@ -141,6 +141,16 @@ or an empty extractor stub; missing duration or channel alone is not evidence of
 Exit 0 = success (including existing/no matches), 1 = operational failure, 2 = invalid
 arguments. `doctor --json` returns diagnostics with `ok: false` and exits 1 when a
 required dependency is missing. Help and version output are plain text.
+
+**Doctor diagnostics:** `executable` is the resolved running script. `ytmd_on_path`
+is an ordered list of `{path, resolved}` entries; distinct resolved installations
+trigger a `multiple_installations` warning. `yt_dlp_version` and `yt_dlp_age_days`
+come from a local `yt-dlp --ignore-config --version` call with a five-second timeout.
+Releases older than 90 days trigger `yt_dlp_outdated`; unknown dates or command failures
+trigger `yt_dlp_version_unknown`. Unknown values are null. `warnings: [{code, message}]`
+are advisory and do not change the existing `ok`/exit-code check for Python, FTS5,
+and yt-dlp presence. Doctor does not test YouTube connectivity, create the library,
+update dependencies, or edit PATH.
 
 Search results include the matching passage's `video_id`, `title`, `start`, `end`,
 `text`, `url`, caption provenance, and score. `--context` adds a separate

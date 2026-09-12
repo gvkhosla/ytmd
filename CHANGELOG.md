@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.7
+
+- `doctor` reports the resolved running CLI path and ytmd installations in PATH order, warning about distinct installations.
+- Report yt-dlp version/release age using a bounded local version command; warn after 90 days or when the age cannot be determined.
+- Warnings are advisory: no network health checks, automatic updates, PATH edits, or changes to the library. Existing required-dependency exit behavior is unchanged.
+
 ## 0.4.6
 
 - Batch `add` reports every input in order, preserving successful saves when another video fails. JSON returns an array with per-input errors and exits 1 on any failure; single-video behavior is unchanged.

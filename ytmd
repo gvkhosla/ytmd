@@ -18,7 +18,7 @@ import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "0.4.6"
+VERSION = "0.4.7"
 SCHEMA = 2
 ID = re.compile(r"[A-Za-z0-9_-]{11}\Z")
 LANG = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -709,6 +709,38 @@ def cmd_rm(args):
     output(dict(status="removed", id=row["id"]), args, f"Removed {row['id']}")
 
 
+def executable_paths(name):
+    """List distinct executable paths in PATH order, retaining symlink locations."""
+    paths = []
+    for directory in os.get_exec_path():
+        candidate = os.path.abspath(os.path.join(directory, name))
+        if candidate not in paths and os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            paths.append(candidate)
+    return paths
+
+
+def ytdlp_diagnostics(binary):
+    version, age = None, None
+    warnings = []
+    if not binary:
+        return version, age, warnings
+    try:
+        result = subprocess.run([binary, "--ignore-config", "--version"], capture_output=True, text=True, timeout=5)
+        if result.returncode or not result.stdout.strip():
+            raise ValueError("version command failed or returned no version")
+        version = result.stdout.strip().splitlines()[0][:200]
+        match = re.match(r"^(\d{4}\.\d{2}\.\d{2})(?:\D|$)", version)
+        if not match:
+            raise ValueError("version has no recognizable release date")
+        released = datetime.strptime(match[1], "%Y.%m.%d").date()
+        age = max(0, (datetime.now(timezone.utc).date() - released).days)
+        if age > 90:
+            warnings.append(dict(code="yt_dlp_outdated", message=f"yt-dlp {version} is {age} days old. Consider updating with the package manager used to install it; no update was performed."))
+    except (OSError, subprocess.TimeoutExpired, ValueError) as e:
+        warnings.append(dict(code="yt_dlp_version_unknown", message=f"Could not determine yt-dlp release age ({e}). Check the yt-dlp installation."))
+    return version, age, warnings
+
+
 def cmd_doctor(args):
     with closing(sqlite3.connect(":memory:")) as conn:
         try:
@@ -717,8 +749,20 @@ def cmd_doctor(args):
         except sqlite3.OperationalError:
             fts = False
     data = dict(version=VERSION, python=sys.version.split()[0], fts5=fts, yt_dlp=shutil.which("yt-dlp"), library=str(library()))
+    version, age, warnings = ytdlp_diagnostics(data["yt_dlp"])
+    paths = [dict(path=p, resolved=str(Path(p).resolve())) for p in executable_paths("ytmd")]
+    if len({p["resolved"] for p in paths}) > 1:
+        warnings.append(dict(code="multiple_installations", message=f"Multiple ytmd installations are on PATH. Bare 'ytmd' selects {paths[0]['path']}; compare it with executable below before updating."))
+    data.update(executable=str(Path(__file__).resolve()), ytmd_on_path=paths,
+                yt_dlp_version=version, yt_dlp_age_days=age, warnings=warnings)
+    # Warnings are advisory, not a network-health check or an automatic update.
     data["ok"] = bool(fts and data["yt_dlp"] and sys.version_info >= (3, 9))
-    output(data, args, "\n".join(f"{k}: {v}" for k, v in data.items()))
+    lines = [f"{k}: {v}" for k, v in data.items() if k not in ("ytmd_on_path", "warnings")]
+    if paths:
+        lines += ["ytmd on PATH (in order):"] + [f"  {p['path']} -> {p['resolved']}" for p in paths]
+    if warnings:
+        lines += ["Warnings (advisory):"] + [f"  {w['code']}: {w['message']}" for w in warnings]
+    output(data, args, "\n".join(lines))
     return 0 if data["ok"] else 1
 
 

@@ -14,11 +14,15 @@ Full plain-text reference: https://gvkhosla.github.io/ytmd/llms.txt
 
 Run `ytmd doctor --json`. If missing, explain prerequisites (Python 3.9+ with FTS5
 and yt-dlp). Ask before installing dependencies or modifying the environment.
+Doctor includes `executable`, ordered `ytmd_on_path`, `yt_dlp_version`, `yt_dlp_age_days`,
+and advisory `warnings: [{code, message}]`. An `ok: true` is a minimum local dependency
+check, not proof YouTube works. Surface outdated yt-dlp or multiple installations;
+ask before updating dependencies or changing PATH. Doctor itself never does either.
 With permission, inspect then run:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.6/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.7/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor --json
 ```
