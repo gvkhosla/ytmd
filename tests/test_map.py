@@ -1,5 +1,6 @@
 """Section maps for chaptered and chapterless videos."""
 import json
+import shlex
 from unittest.mock import patch
 
 from test_read_context import ReadingAndEvidence
@@ -13,7 +14,11 @@ class VideoMap(Isolated):
                       chapters_json=json.dumps(chapters) if chapters is not None else None)
         if chapters is None:
             record["description"] = "No timestamps in this description."
-        y.save(self.db(), record)
+        conn = y.connect()
+        try:
+            y.save(conn, record)
+        finally:
+            conn.close()
         return record
 
 
@@ -70,7 +75,7 @@ class MapBehavior(VideoMap):
         self.assertEqual(len(data["sections"]), 2)
         self.assertTrue(data["has_more"])
         self.assertIn("--offset 2", data["next_command"])
-        page = self.data(*data["next_command"].split()[1:-1])
+        page = self.data(*shlex.split(data["next_command"])[1:-1])
         self.assertEqual(page["offset"], 2)
         self.assertEqual(page["sections"][0]["number"], 3)
 

@@ -3,6 +3,7 @@ import base64
 import io
 import json
 import shlex
+import warnings
 from unittest.mock import patch
 
 from test_ytmd import Isolated, KEY, row, y
@@ -17,8 +18,10 @@ class ReadingAndEvidence(Isolated):
 
     def call(self, *args):
         out, err = io.StringIO(), io.StringIO()
-        with redirect_stdout(out), redirect_stderr(err), patch.object(y, 'fetch', side_effect=AssertionError('network fetch')), patch.object(y, 'run_ytdlp', side_effect=AssertionError('yt-dlp invoked')):
-            code = y.main([*args, '--json'])
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', ResourceWarning)
+            with redirect_stdout(out), redirect_stderr(err), patch.object(y, 'fetch', side_effect=AssertionError('network fetch')), patch.object(y, 'run_ytdlp', side_effect=AssertionError('yt-dlp invoked')):
+                code = y.main([*args, '--json'])
         return code, out.getvalue(), err.getvalue()
 
     def data(self, *args):

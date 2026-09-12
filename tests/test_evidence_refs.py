@@ -20,10 +20,13 @@ class EvidenceRefs(VideoMap):
         bundle = self.data("bundle", KEY, "--query", "cache", "--context", "0")
         refs = [item["ref"] for item in bundle["evidence"]]
         self.data("export")
-        with y.connect() as conn:
+        conn = y.connect()
+        try:
             conn.execute("DELETE FROM passages_fts")
             conn.execute("INSERT INTO passages_fts(rowid, text) SELECT id, text FROM passages")
             conn.commit()
+        finally:
+            conn.close()
         later = self.data("bundle", KEY, "--query", "cache", "--context", "0")
         self.assertEqual([item["ref"]["passage_index"] for item in later["evidence"]], [r["passage_index"] for r in refs])
         self.assertEqual([item["ref"]["passage_digest"] for item in later["evidence"]], [r["passage_digest"] for r in refs])
