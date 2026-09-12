@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""YouTube captions → a local, searchable transcript library. Python 3.9+, yt-dlp."""
+"""YouTube captions → evidence for understanding and action. Python 3.9+, yt-dlp."""
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
+import hashlib
 from contextlib import closing
 from datetime import datetime, timezone
 import html
@@ -18,7 +21,7 @@ import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "0.4.8"
+VERSION = "0.5.0"
 SCHEMA = 2
 ID = re.compile(r"[A-Za-z0-9_-]{11}\Z")
 LANG = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -667,7 +670,7 @@ def merge_search_context(results, sources, context):
     return [hit for _, hit in sorted(grouped, key=lambda item: item[0])]
 
 
-def cmd_search(args):
+def search_results(args):
     tokens = re.findall(r"\w+", " ".join(args.query), re.UNICODE)
     if not tokens:
         raise Error("invalid_query", "Enter at least one search word.")
@@ -696,6 +699,11 @@ def cmd_search(args):
             sources = {key: json.loads(conn.execute("SELECT cues_json FROM videos WHERE id=?", (key,)).fetchone()[0])
                        for key in dict.fromkeys(r["video_id"] for r in results)}
             results = merge_search_context(results, sources, args.context)
+    return results
+
+
+def cmd_search(args):
+    results = search_results(args)
     blocks = []
     for r in results:
         merged = f" · {len(r['matches'])} matches" if "matches" in r else ""
@@ -710,6 +718,200 @@ def cmd_search(args):
     output(results, args, text)
 
 
+def source_metadata(row):
+    if not isinstance(row.get("id"), str) or not ID.fullmatch(row["id"]):
+        raise Error("invalid_video", "Invalid stored video ID; refusing to generate continuation commands.")
+    keys = ("id", "title", "url", "channel", "duration_s", "lang", "captions", "caption_format")
+    data = {k: row[k] for k in keys}
+    data["chapters"] = [dict(c, number=i + 1) for i, c in enumerate(public_chapters(row))]
+    snapshot = json.dumps([data, row["cues_json"]], sort_keys=True, ensure_ascii=False)
+    data["source_snapshot"] = hashlib.sha256(snapshot.encode()).hexdigest()
+    return data
+
+
+def encode_cursor(value):
+    return base64.urlsafe_b64encode(json.dumps(value, separators=(",", ":")).encode()).decode().rstrip("=")
+
+
+def decode_cursor(token):
+    try:
+        if len(token) > 4096 or not re.fullmatch(r"[A-Za-z0-9_-]+", token):
+            raise ValueError()
+        data = json.loads(base64.urlsafe_b64decode(token + "=" * (-len(token) % 4)))
+        if not isinstance(data, dict) or set(data) != {"v", "id", "source", "scope", "position"} or type(data.get("v")) is not int or data["v"] != 1:
+            raise ValueError()
+        scope, position = data["scope"], data["position"]
+        if not isinstance(scope, dict) or set(scope) != {"start", "end", "chapter"} or not isinstance(position, list) or len(position) != 2:
+            raise ValueError()
+        if any(type(n) is not int or n < 0 for n in position):
+            raise ValueError()
+        start, end = scope["start"], scope["end"]
+        if type(start) not in (int, float) or not math.isfinite(start) or start < 0:
+            raise ValueError()
+        if end is not None and (type(end) not in (int, float) or not math.isfinite(end) or end <= start):
+            raise ValueError()
+        chapter = scope["chapter"]
+        if chapter is not None and (type(chapter) is not int or chapter < 1):
+            raise ValueError()
+        if not isinstance(data["id"], str) or not isinstance(data["source"], str):
+            raise ValueError()
+        return data
+    except (ValueError, TypeError, KeyError, binascii.Error, UnicodeError, OverflowError, RecursionError):
+        raise Error("invalid_cursor", "Invalid read cursor. Start a new read without --cursor.")
+
+
+def budget_page(units, budget, position=(0, 0)):
+    index, offset = position
+    if index > len(units) or (index == len(units) and offset) or (index < len(units) and offset >= len(units[index]["text"])):
+        raise Error("invalid_cursor", "Read cursor position is outside this transcript.")
+    selected, used = [], 0
+    while index < len(units) and used < budget:
+        unit = units[index]
+        stop = min(len(unit["text"]), offset + budget - used)
+        selected.append(dict(unit, text=unit["text"][offset:stop], text_from=offset, text_to=stop,
+                             text_length=len(unit["text"]), partial=offset > 0 or stop < len(unit["text"])))
+        used += stop - offset
+        if stop == len(unit["text"]):
+            index, offset = index + 1, 0
+        else:
+            offset = stop
+    return selected, used, ([index, offset] if index < len(units) else None)
+
+
+def cited_passages(row, cues):
+    chapters = public_chapters(row)
+    return [dict(p, url=url_for(row["id"], p["start"]),
+                 chapters=[i + 1 for i, c in enumerate(chapters)
+                           if (p["end"] > c["start"] or p["start"] >= c["start"])
+                           and (c["end"] <= c["start"] or p["start"] < c["end"])])
+            for p in passages(cues)]
+
+
+def budget_metadata(max_chars, used):
+    return dict(max_chars=max_chars, used_chars=used, unit="unicode_characters", applies_to="excerpt_text_only")
+
+
+def returned_ranges(items):
+    return [dict(start=p["start"], end=p["end"], partial=p["partial"]) for p in items]
+
+
+def excerpt_text(items):
+    blocks = []
+    for p in items:
+        partial = f" (partial text {p['text_from']}:{p['text_to']} of {p['text_length']} characters)" if p["partial"] else ""
+        blocks.append(f"[{timestamp(p['start'])}]{partial} {p['text']}")
+    return "\n\n".join(blocks)
+
+
+def cmd_read(args):
+    if args.cursor and (args.chapter is not None or args.start is not None or args.to is not None):
+        raise Error("usage", "--cursor cannot be combined with --chapter, --from, or --to.")
+    if args.chapter is not None and (args.start is not None or args.to is not None):
+        raise Error("usage", "Choose --chapter or a time range, not both.")
+    if args.to is not None and args.to <= (args.start or 0):
+        raise Error("invalid_range", "--to must be later than --from.")
+    cursor = decode_cursor(args.cursor) if args.cursor else None
+    with closing(connect()) as conn:
+        row = resolve(conn, args.video)
+    data = source_metadata(row)
+    scope = dict(start=args.start or 0, end=args.to, chapter=args.chapter)
+    position = [0, 0]
+    if cursor:
+        if cursor["id"] != row["id"]:
+            raise Error("invalid_cursor", "This cursor belongs to another video.")
+        if cursor["source"] != data["source_snapshot"]:
+            raise Error("stale_cursor", "Saved captions or metadata changed. Start a new read without --cursor.")
+        scope, position = cursor["scope"], cursor["position"]
+        if scope["chapter"] is not None:
+            if scope["chapter"] > len(data["chapters"]):
+                raise Error("invalid_cursor", "Cursor chapter is outside this transcript.")
+            chapter = data["chapters"][scope["chapter"] - 1]
+            end = chapter["end"] if chapter["end"] > chapter["start"] else None
+            if scope["start"] != chapter["start"] or scope["end"] != end:
+                raise Error("invalid_cursor", "Cursor chapter boundaries do not match this transcript.")
+    elif args.chapter is not None:
+        if args.chapter > len(data["chapters"]):
+            raise Error("invalid_chapter", f"Choose a chapter from 1 to {len(data['chapters'])}; use ytmd info {row['id']}.")
+        chapter = data["chapters"][args.chapter - 1]
+        scope.update(start=chapter["start"], end=chapter["end"] if chapter["end"] > chapter["start"] else None)
+    all_cues = json.loads(row["cues_json"])
+    scoped_cues = window(all_cues, scope["start"], scope["end"])
+    units = cited_passages(row, scoped_cues)
+    selected, used, next_position = budget_page(units, args.max_chars, position)
+    next_cursor = encode_cursor(dict(v=1, id=row["id"], source=data["source_snapshot"], scope=scope, position=next_position)) if next_position else None
+    next_command = f"ytmd read {row['id']} --cursor {next_cursor} --max-chars {args.max_chars} --json" if next_cursor else None
+    data.update(scope=scope, passages=selected, returned_ranges=returned_ranges(selected),
+                budget=budget_metadata(args.max_chars, used), has_more=next_position is not None,
+                next_cursor=next_cursor, next_command=next_command,
+                omissions=dict(before_page=position != [0, 0], after_page=next_position is not None,
+                               outside_scope=len(scoped_cues) < len(all_cues)),
+                coverage_note="Returned source-passage ranges only, not proof of whole-video review. Partial text retains its original passage timestamps.")
+    text = f"# {row['title']}\n{row['url']}\nScope: {json.dumps(scope)}\n\n" + excerpt_text(selected)
+    text += f"\n\nExcerpt budget: {used}/{args.max_chars} characters (metadata excluded)."
+    text += "\n" + data["coverage_note"] + f"\nOmissions: {json.dumps(data['omissions'])}"
+    text += f"\nNext: {next_command}" if next_command else "\nEnd of requested scope; caption gaps may still exist."
+    output(data, args, text)
+
+
+def cmd_context(args):
+    if len(args.query) > 8 or any(len(q) > 200 or not re.findall(r"\w+", q) for q in args.query):
+        raise Error("invalid_query", "Use 1–8 queries of at most 200 characters, each containing a search word.")
+    with closing(connect()) as conn:
+        row = resolve(conn, args.video)
+    data = source_metadata(row)
+    results = []
+    for query in args.query:
+        results.append(search_results(argparse.Namespace(query=[query], match=args.match, video=row["id"],
+                       channel=None, limit=args.limit, diverse=False, context=0)))
+    # Round-robin query results: BM25 scores from different queries aren't comparable.
+    hits, seen, query_map = [], set(), {}
+    for rank in range(args.limit):
+        for query, found in zip(args.query, results):
+            if rank >= len(found):
+                continue
+            hit = found[rank]
+            identity = (hit["start"], hit["end"], hit["text"])
+            query_map.setdefault(identity, [])
+            if query not in query_map[identity]:
+                query_map[identity].append(query)
+            if identity not in seen:
+                seen.add(identity)
+                hits.append(hit)
+    # Reject mixed snapshots if another process replaced the track during retrieval.
+    with closing(connect()) as conn:
+        latest = resolve(conn, row["id"])
+    if source_metadata(latest)["source_snapshot"] != data["source_snapshot"]:
+        raise Error("source_changed", "Saved captions changed during retrieval. Run context again.")
+    cues = json.loads(row["cues_json"])
+    grouped = merge_search_context(hits, {row["id"]: cues}, args.context) if args.context else hits
+    units, used_cues = [], set()
+    for group in grouped:
+        matches = group.get("matches", [group])
+        selected_ids = {id(c) for m in matches for c in window(cues, max(0, m["start"] - args.context),
+                        m["end"] + args.context if m["end"] + args.context > m["start"] else math.nextafter(m["start"], math.inf))}
+        units.extend(cited_passages(row, [c for c in cues if id(c) in selected_ids - used_cues]))
+        used_cues.update(selected_ids)
+    evidence, used, rest = budget_page(units, args.max_chars)
+    retrieval = [dict(start=h["start"], end=h["end"], url=h["url"], queries=query_map[(h["start"], h["end"], h["text"])]) for h in hits]
+    follow_up = None
+    if rest:
+        unit = units[rest[0]]
+        end = max(math.ceil(unit["end"]), math.floor(unit["start"]) + 1)
+        follow_up = f"ytmd read {row['id']} --from {math.floor(unit['start'])} --to {end} --max-chars {args.max_chars} --json"
+    data.update(queries=args.query, match=args.match, evidence=evidence, retrieval_hits=retrieval,
+                budget=budget_metadata(args.max_chars, used), returned_ranges=returned_ranges(evidence),
+                omissions=dict(candidate_limit_per_query=args.limit, unmatched_queries=[q for q, found in zip(args.query, results) if not found],
+                               omitted_passages=len(units) - len(evidence), partial_passages=sum(p["partial"] for p in evidence),
+                               budget_exhausted=rest is not None, selection_is_exhaustive=False),
+                next_command=follow_up,
+                coverage_note="Lexical evidence selection, not a summary or full-video review. Retrieval hits are navigation hints, not necessarily included in the budgeted evidence. Partial text retains source-passage timestamps.")
+    text = f"# Evidence: {row['title']}\n{row['url']}\n\n" + excerpt_text(evidence)
+    text += f"\n\nExcerpt budget: {used}/{args.max_chars} characters (metadata excluded).\n{data['coverage_note']}\nOmissions: {json.dumps(data['omissions'], ensure_ascii=False)}"
+    if follow_up:
+        text += f"\nNext: {follow_up}"
+    output(data, args, text)
+
+
 def cmd_show(args):
     check_range(args)
     with closing(connect()) as conn:
@@ -720,13 +922,13 @@ def cmd_show(args):
 def cmd_info(args):
     with closing(connect()) as conn:
         row = resolve(conn, args.video)
-    chapters = public_chapters(row)
+    chapters = [dict(c, number=i + 1) for i, c in enumerate(public_chapters(row))]
     data = {k: row[k] for k in ("id", "title", "url", "channel", "uploaded_at", "duration_s", "captions", "lang", "caption_format", "ingested_at")}
     data.update(path=str(library() / f"{row['id']}.md"), chapters=chapters)
     details = " · ".join(x for x in (row["channel"] or None, timestamp(row["duration_s"]) if row["duration_s"] is not None else None, f"{row['captions']} {row['lang']}".strip()) if x)
     lines = [f"# {row['title']}", row["url"], "", details]
     if chapters:
-        lines += ["", "Chapters:"] + [f"  {timestamp(c['start'])}  {c['title']}" for c in chapters]
+        lines += ["", f"Chapters (use ytmd read {row['id']} --chapter NUMBER):"] + [f"  {i + 1}. {timestamp(c['start'])}  {c['title']}" for i, c in enumerate(chapters)]
     else:
         lines += ["", f"No chapters found. Read: ytmd show {row['id']} --from 0:00 --to 1:00"]
     output(data, args, "\n".join(lines))
@@ -868,11 +1070,25 @@ def context_arg(value):
     return number
 
 
+def char_budget(value):
+    number = nonnegative(value)
+    if not 256 <= number <= 100000:
+        raise argparse.ArgumentTypeError("excerpt character budget must be between 256 and 100000")
+    return number
+
+
+def chapter_number(value):
+    number = nonnegative(value)
+    if not 1 <= number <= 10000:
+        raise argparse.ArgumentTypeError("chapter number must be between 1 and 10000")
+    return number
+
+
 def parser():
-    p = Parser(description=__doc__, epilog="Start: ytmd get URL | Outline: ytmd info ID | Search: ytmd search WORDS | Read: ytmd show ID --from 0:00 --to 1:00. Library: ~/ytmd (override YTMD_DIR).")
+    p = Parser(description=__doc__, epilog="Save: ytmd add URL | Outline: ytmd info ID | Evidence: ytmd context ID --query WORDS | Read: ytmd read ID --max-chars 8000. Library: ~/ytmd (override YTMD_DIR).")
     p.add_argument("--version", action="version", version=f"ytmd {VERSION}")
     sub = p.add_subparsers(dest="command", required=True)
-    for name, help_text, handler in [("add", "save captions for one or more videos", cmd_add), ("get", "save if needed, then print the transcript", cmd_get), ("search", "search timestamped passages", cmd_search), ("show", "read a video or time window", cmd_show), ("info", "metadata and chapters", cmd_info), ("list", "list saved videos", cmd_list), ("export", "rebuild markdown from SQLite", cmd_export), ("rm", "delete a saved video", cmd_rm), ("doctor", "check local dependencies", cmd_doctor), ("path", "print library location", None)]:
+    for name, help_text, handler in [("add", "save captions for one or more videos", cmd_add), ("get", "save if needed, then print the transcript", cmd_get), ("search", "search timestamped passages", cmd_search), ("show", "read a video or time window", cmd_show), ("read", "budgeted chapter or sequential reading", cmd_read), ("context", "task-focused evidence from a saved video", cmd_context), ("info", "metadata and chapters", cmd_info), ("list", "list saved videos", cmd_list), ("export", "rebuild markdown from SQLite", cmd_export), ("rm", "delete a saved video", cmd_rm), ("doctor", "check local dependencies", cmd_doctor), ("path", "print library location", None)]:
         s = sub.add_parser(name, help=help_text, description=help_text)
         formats = s.add_mutually_exclusive_group()
         formats.add_argument("--json", action="store_true", help="machine-readable output (errors too)")
@@ -899,6 +1115,19 @@ def parser():
             s.add_argument("--match", choices=("all", "any", "phrase"), default="all", help="match all query words (default), any of them, or the words as one phrase")
             s.add_argument("--context", type=context_arg, default=0, metavar="SECONDS", help="include 0–120 seconds around each match; merge overlapping windows")
             s.add_argument("--diverse", action="store_true", help="spread selected hits across videos, one per video per round")
+        elif name in ("read", "context"):
+            s.add_argument("video", help="saved video ID, URL, or unambiguous title")
+            s.add_argument("--max-chars", type=char_budget, default=8000, help="excerpt text budget; metadata excluded (default 8000)")
+            if name == "read":
+                s.add_argument("--chapter", type=chapter_number, help="1-based chapter number from info")
+                s.add_argument("--from", dest="start", type=time_arg)
+                s.add_argument("--to", type=time_arg)
+                s.add_argument("--cursor", help="resume the returned next_cursor; no scope flags")
+            else:
+                s.add_argument("--query", action="append", required=True, help="agent-supplied keywords; repeat up to 8 times")
+                s.add_argument("--match", choices=("all", "any", "phrase"), default="all")
+                s.add_argument("--context", type=context_arg, default=15, help="seconds around each selected hit (default 15)")
+                s.add_argument("-n", "--limit", type=positive, default=5, help="maximum selected hits per query (default 5)")
         elif name == "list":
             s.add_argument("query", nargs="?", help="filter by title, channel, or ID (literal substring)")
             s.add_argument("-n", "--limit", type=positive, default=50)

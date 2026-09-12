@@ -1,0 +1,62 @@
+{
+  "provenance": "Synthetic teaching material authored for regression tests; these IDs are fixture identifiers, not videos to fetch or cite as real YouTube sources.",
+  "video": {
+    "id": "EVAL0000001",
+    "title": "Synthetic fixture: introducing a read cache safely",
+    "channel": "ytmd evaluation fixtures",
+    "duration_s": 440,
+    "chapters": [
+      {"start": 0, "end": 120, "title": "Purpose and prerequisites"},
+      {"start": 120, "end": 300, "title": "Procedure and rollback"},
+      {"start": 300, "end": 440, "title": "Examples and limits"}
+    ],
+    "cues": [
+      {"start": 0, "end": 20, "text": "The purpose of this cache is to reduce repeated database reads, not to repair an inefficient underlying query."},
+      {"start": 60, "end": 85, "text": "Prerequisites: measure baseline latency and errors, and confirm that this endpoint permits data up to thirty seconds old. Never use this recipe for authorization decisions."},
+      {"start": 120, "end": 145, "text": "Rollout procedure: shadow reads first, compare the cached and uncached responses, then enable caching for five percent of traffic behind a reversible flag."},
+      {"start": 180, "end": 205, "text": "TTL example: use thirty seconds for an inventory preview that tolerates stale data. This is an example, not a universal TTL recommendation."},
+      {"start": 240, "end": 265, "text": "Rollback condition: if the error rate increases by more than one percentage point over baseline, disable the flag and restore uncached reads. Keep monitoring after rollback."},
+      {"start": 300, "end": 325, "text": "Key example: tenant ID must be part of the cache key. A shared key can expose one tenant's data to another. Test two tenants requesting the same resource ID."},
+      {"start": 360, "end": 385, "text": "The tradeoff is that shorter TTL reduces staleness but increases database load. Benchmark with your own workload; there is no promised speedup."},
+      {"start": 420, "end": 440, "text": "This lesson does not prescribe a cache vendor, SDK, or language-specific implementation."}
+    ]
+  },
+  "tasks": [
+    {
+      "id": "overview",
+      "goal": "Decide whether this lesson is relevant to a slow read-heavy endpoint.",
+      "queries": ["purpose", "prerequisites", "tradeoff"],
+      "required_evidence": ["reduce repeated database reads", "not to repair an inefficient underlying query", "measure baseline latency", "no promised speedup"],
+      "answer_requirements": ["Explain when the technique is relevant, not just its headline benefit.", "Do not promise a performance improvement."]
+    },
+    {
+      "id": "learn",
+      "goal": "Teach me how to roll out this technique safely.",
+      "queries": ["prerequisites", "rollout", "rollback"],
+      "required_evidence": ["Never use this recipe for authorization", "shadow reads first", "five percent", "one percentage point", "Keep monitoring"],
+      "answer_requirements": ["Include prerequisites, ordered steps, a stop condition, and rollback.", "Distinguish the source procedure from any extra engineering advice."]
+    },
+    {
+      "id": "apply",
+      "goal": "Apply this to a multi-tenant inventory preview endpoint.",
+      "queries": ["inventory", "tenant", "rollback"],
+      "required_evidence": ["not a universal TTL recommendation", "tenant ID", "Test two tenants", "disable the flag"],
+      "answer_requirements": ["Explain the stale-data assumption before recommending a TTL.", "Propose a concrete isolation test and cite its source.", "Label repository-specific changes as adaptations, not speaker instructions."]
+    },
+    {
+      "id": "qualify",
+      "goal": "Should I apply this cache to permission checks?",
+      "queries": ["authorization", "tradeoff"],
+      "required_evidence": ["Never use this recipe for authorization decisions", "shorter TTL reduces staleness"],
+      "answer_requirements": ["Clearly reject applying this recipe to authorization checks.", "Do not imply a short TTL removes the restriction."]
+    },
+    {
+      "id": "unsupported",
+      "goal": "Which Redis SDK and function names does the speaker recommend?",
+      "queries": ["Redis SDK", "prescribe"],
+      "required_evidence": ["does not prescribe a cache vendor, SDK, or language-specific implementation"],
+      "unmatched_queries": ["Redis SDK"],
+      "answer_requirements": ["State that the source does not supply the requested implementation.", "Do not invent SDK names or code and attribute them to the speaker."]
+    }
+  ]
+}

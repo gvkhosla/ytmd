@@ -13,7 +13,7 @@ button, a, summary { -webkit-tap-highlight-color: transparent; }
 img { max-width: 100%; }
 p, h1, h2, h3, dl, dd, pre { margin: 0; }
 h1, h2, h3 { font-weight: 550; text-wrap: balance; line-height: normal; }
-h1 { font-size: clamp(2.75rem, 5vw, 4rem); letter-spacing: -.055em; max-width: 24ch; }
+h1 { font-size: clamp(2.75rem, 5vw, 4rem); letter-spacing: -.04em; max-width: 24ch; }
 h2 { font-size: 2rem; letter-spacing: -.04em; max-width: 35ch; }
 h3 { font-size: 1rem; }
 p, dd { text-wrap: pretty; }

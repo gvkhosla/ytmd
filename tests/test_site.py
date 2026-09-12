@@ -3,6 +3,7 @@ from collections import defaultdict
 from html.parser import HTMLParser
 from pathlib import Path
 import re
+import json
 import runpy
 import shlex
 import struct
@@ -114,7 +115,7 @@ class LandingPage(unittest.TestCase):
             args = shlex.split(command)
             self.assertEqual(args[0], "ytmd")
             parsed = cli["parser"]().parse_args(args[1:])
-            self.assertIn(parsed.command, ("get", "info", "search", "show"))
+            self.assertIn(parsed.command, ("add", "info", "context", "read"))
 
     def test_no_external_scripts_or_stylesheets(self):
         for tag, attrs in self.doc.elements:
@@ -141,6 +142,21 @@ class LandingPage(unittest.TestCase):
             if tag == "nav":
                 self.assertIn("aria-label", attrs)
         self.assertIn("<noscript>", (SITE / "index.html").read_text())
+
+    def test_v05_task_prompt_and_discovery_links(self):
+        prompt = " ".join(self.doc.text["use-prompt"].split())
+        self.assertIn(prompt, " ".join(self.readme.split()))
+        self.assertIn("prerequisites", prompt)
+        self.assertIn("adaptations", prompt)
+        text = (SITE / "index.html").read_text()
+        structured = re.search(r'<script type="application/ld\+json">(.*?)</script>', text).group(1)
+        schema = json.loads(structured)
+        self.assertEqual(schema["name"], "ytmd")
+        self.assertEqual(schema["softwareVersion"], re.search(r'^VERSION = "([^"]+)"', (ROOT / "ytmd").read_text(), re.M).group(1))
+        self.assertIn("examples/README.md", text)
+        self.assertTrue((ROOT / "examples/README.md").exists())
+        self.assertTrue((ROOT / "evals/README.md").exists())
+        self.assertIn("https://gvkhosla.github.io/ytmd/", (SITE / "sitemap.xml").read_text())
 
     def test_setup_prompt_matches_readme(self):
         prompt = " ".join(self.doc.text["agent-prompt"].split())

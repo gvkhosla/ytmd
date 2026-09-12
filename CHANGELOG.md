@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0
+
+- Goal-aware agent skill: help users understand, learn, or apply ideas at task-appropriate depth, with source claims separated from adaptations.
+- `read ID`: budgeted chapter/time-range/sequential reads, numbered chapters, exact text-offset continuation cursors, snapshot-change detection, returned ranges, and explicit omissions. Oversized passages paginate without dropping text.
+- `context ID --query WORDS`: multi-query lexical evidence bundles with deduplicated excerpts, source metadata/outline/provenance, query-hit navigation, budgets, and honest omissions.
+- Excerpt budgets count Unicode characters in text only, not metadata or model tokens. Partial excerpts retain original passage timestamps. Existing get/show behavior is unchanged; no schema migration or added dependencies.
+- Five synthetic task evaluations check retrieval, quote fidelity, citations, and budgets; a separate rubric and authored examples cover agent-answer quality without claiming unrun model scores.
+- Outcome-led site/README, three complete workflows, structured software metadata, sitemap, and a discovery plan. No analytics or external promotional submissions.
+
 ## 0.4.8
 
 - Search with context merges overlapping or touching windows from the same video. Keep the best hit's fields unchanged and include all selected citations in `matches` for merged groups; repeated speech is preserved.
