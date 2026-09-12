@@ -5,9 +5,10 @@ model endpoint, analytics, or third-party asset requests. CLI remains v0.5.0.
 
 ## Current brief
 
-Keep the established cool paper, navy, green, Barlow, and Inter identity. The user
-replaced the single synthetic demo with six real videos and explicitly requested
-visual thumbnails plus a simple explanation of local Markdown, SQLite, and search.
+High-contrast near-white / black / emerald, Barlow display, Inter body. Six real
+videos with local thumbnails. One-line offer, then proof, then a short local
+Markdown + SQLite outline. Dark mode is a composed near-black theme with a dedicated
+wordmark, not inverted photographs.
 
 - Six locally served thumbnails, three technical / three business.
 - One task and short useful result per video. Native disclosures hold adapted

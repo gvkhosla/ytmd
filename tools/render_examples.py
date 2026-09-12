@@ -20,7 +20,7 @@ def clock(seconds):
 def render():
     data = json.loads((ROOT / 'examples/videos.json').read_text())
     lines = [BEGIN, '    <section id="use" aria-label="Real video examples">']
-    for category, heading in [('technical', 'For builders'), ('business', 'For business')]:
+    for category, heading in [('technical', 'Builders'), ('business', 'Business')]:
         lines += [f'      <section class="video-group" aria-labelledby="{category}-title">',
                   f'        <h2 id="{category}-title">{heading}</h2>', '        <div class="video-grid">']
         for video in data['videos']:

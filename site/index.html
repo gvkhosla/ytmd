@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f4f6fa">
+  <meta name="theme-color" content="#fafafa">
   <meta name="color-scheme" content="light dark">
-  <script src="./theme.js?v=0.5.0-videos1"></script>
+  <script src="./theme.js?v=0.5.0-clarity1"></script>
   <title>ytmd — Put YouTube videos to work</title>
   <meta name="description" content="Give your agent a YouTube video and a task. Get practical next steps, with timestamps you can check. For Pi, Codex, and Claude Code.">
   <link rel="canonical" href="https://gvkhosla.github.io/ytmd/">
@@ -15,25 +15,25 @@
   <meta property="og:title" content="ytmd — Put YouTube videos to work">
   <meta property="og:description" content="A video and a task. Practical next steps, with timestamps. For your existing Pi, Codex, or Claude Code agent.">
   <meta property="og:url" content="https://gvkhosla.github.io/ytmd/">
-  <meta property="og:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.5.0-videos1">
+  <meta property="og:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.5.0-clarity1">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Put YouTube videos to work. Six real video thumbnails. Local Markdown and SQLite, with evidence for your agent.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="ytmd — Put YouTube videos to work">
   <meta name="twitter:description" content="Give your agent a video and a task. Get practical next steps with timestamps you can check.">
-  <meta name="twitter:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.5.0-videos1">
+  <meta name="twitter:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.5.0-clarity1">
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
   <link rel="preload" href="./assets/BarlowSemiCondensed-SemiBold.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="./assets/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./style.css?v=0.5.0-videos1">
-  <script src="./app.js?v=0.5.0-videos1" defer></script>
+  <link rel="stylesheet" href="./style.css?v=0.5.0-clarity1">
+  <script src="./app.js?v=0.5.0-clarity1" defer></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"ytmd","url":"https://gvkhosla.github.io/ytmd/","description":"Local captions, chapter reads, and timestamped evidence for understanding and applying YouTube videos with an existing agent.","applicationCategory":"DeveloperApplication","operatingSystem":"macOS, Linux","softwareVersion":"0.5.0","license":"https://github.com/gvkhosla/ytmd/blob/v0.5.0/LICENSE","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header page-width">
-    <a class="brand" href="./" aria-label="ytmd homepage"><img src="./assets/wordmark.svg" width="94" height="29" alt="ytmd"></a>
+    <a class="brand" href="./" aria-label="Homepage"><img class="brand-light" src="./assets/wordmark.svg" width="94" height="29" alt="ytmd"><img class="brand-dark" src="./assets/wordmark-dark.svg" width="94" height="29" alt=""></a>
     <nav class="header-actions" aria-label="Site">
       <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" hidden>
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -48,7 +48,7 @@
     <section class="intro" aria-labelledby="hero-title">
       <h1 id="hero-title">Put YouTube videos<br>to work</h1>
       <div class="pitch">
-        <p>ytmd gives your AI agent YouTube captions, saved as local Markdown + SQLite. Turn a video into a plan with timestamps—not just a summary.</p>
+        <p>Give your agent a video and a task. Get a plan with timestamps, not a summary.</p>
         <button class="button" type="button" data-copy="agent-prompt" hidden>Copy setup prompt</button>
         <p class="compatibility">For Pi, Codex, and Claude Code.</p>
         <noscript><a href="#install">Set up ytmd</a></noscript>
@@ -58,7 +58,7 @@
     <!-- BEGIN VIDEO EXAMPLES -->
     <section id="use" aria-label="Real video examples">
       <section class="video-group" aria-labelledby="technical-title">
-        <h2 id="technical-title">For builders</h2>
+        <h2 id="technical-title">Builders</h2>
         <div class="video-grid">
           <article class="video" aria-labelledby="task-D7_ipDqhtwk">
             <a class="thumbnail" href="https://www.youtube.com/watch?v=D7_ipDqhtwk" aria-label="Watch How We Build Effective Agents: Barry Zhang, Anthropic on YouTube">
@@ -68,7 +68,7 @@
             </a>
             <p class="byline">Barry Zhang · Anthropic</p>
             <h3 id="task-D7_ipDqhtwk">Simplify my agent architecture</h3>
-            <p class="result">Start with an environment, tools, and a prompt. Add complexity only after the basic loop works.</p>
+            <p class="result">Start with an environment, tools, and a prompt.</p>
             <details class="plan" id="plan-D7_ipDqhtwk">
               <summary>See the plan &amp; sources</summary>
               <p class="plan-label">Suggested next steps</p>
@@ -93,7 +93,7 @@
             </a>
             <p class="byline">Abhishek Bhardwaj · OpenAI</p>
             <h3 id="task-wsFd22SL1s8">Choose my agent’s sandbox</h3>
-            <p class="result">Compare shared-kernel containers with microVM isolation. Include GPU needs and snapshot/restore—not just startup speed.</p>
+            <p class="result">Compare isolation, GPU needs, and snapshot/restore.</p>
             <details class="plan" id="plan-wsFd22SL1s8">
               <summary>See the plan &amp; sources</summary>
               <p class="plan-label">Suggested next steps</p>
@@ -118,7 +118,7 @@
             </a>
             <p class="byline">LangChain × Manus</p>
             <h3 id="task-6_BcCthVvb8">Shrink context without losing it</h3>
-            <p class="result">Keep bulky tool results in files and their paths in context. Recover the originals instead of trusting a lossy summary.</p>
+            <p class="result">Keep bulky results in files, paths in context.</p>
             <details class="plan" id="plan-6_BcCthVvb8">
               <summary>See the plan &amp; sources</summary>
               <p class="plan-label">Suggested next steps</p>
@@ -138,7 +138,7 @@
         </div>
       </section>
       <section class="video-group" aria-labelledby="business-title">
-        <h2 id="business-title">For business</h2>
+        <h2 id="business-title">Business</h2>
         <div class="video-grid">
           <article class="video" aria-labelledby="task-WU-lBOAS1VQ">
             <a class="thumbnail" href="https://www.youtube.com/watch?v=WU-lBOAS1VQ" aria-label="Watch Patrick Collison — Why Silicon Valley&#x27;s most talented should leave on YouTube">
@@ -148,7 +148,7 @@
             </a>
             <p class="byline">Patrick Collison · Dwarkesh</p>
             <h3 id="task-WU-lBOAS1VQ">Stop relitigating team decisions</h3>
-            <p class="result">Write down the decision and its reasoning. Future teammates inherit the context, not another meeting.</p>
+            <p class="result">Write the decision down so the team can inherit it.</p>
             <details class="plan" id="plan-WU-lBOAS1VQ">
               <summary>See the plan &amp; sources</summary>
               <p class="plan-label">Suggested next steps</p>
@@ -172,7 +172,7 @@
             </a>
             <p class="byline">Miles Grimshaw · Dialectic</p>
             <h3 id="task-MZ14rrkHVbg">Stress-test our startup’s moat</h3>
-            <p class="result">Separate features a rival can rebuild from the customer relationships they still have to earn.</p>
+            <p class="result">A rival can copy features, not your customers.</p>
             <details class="plan" id="plan-MZ14rrkHVbg">
               <summary>See the plan &amp; sources</summary>
               <p class="plan-label">Suggested next steps</p>
@@ -197,7 +197,7 @@
             </a>
             <p class="byline">Brian Chesky · Invest Like the Best</p>
             <h3 id="task-eURcW5_uS60">Make onboarding worth remembering</h3>
-            <p class="result">Imagine an absurdly great first experience. Work backwards to one improvement you can actually deliver.</p>
+            <p class="result">Invent an absurd first run, then ship one real delight.</p>
             <details class="plan" id="plan-eURcW5_uS60">
               <summary>See the plan &amp; sources</summary>
               <p class="plan-label">Suggested next steps</p>
@@ -215,17 +215,17 @@
           </article>
         </div>
       </section>
-      <p class="example-note">Worked examples from selected captions. Plans are our adaptations, not speaker instructions or full-video reviews.</p>
+      <p class="example-note">Selected captions. Plans are our adaptations, not speaker instructions or full-video reviews.</p>
     </section>
     <!-- END VIDEO EXAMPLES -->
 
     <section class="how-it-works" aria-label="Why local retrieval works better">
-      <ol class="pipeline">
-        <li><h2>Save once</h2><p>Captions in <strong>Markdown + SQLite.</strong><br>Your files, readable offline.</p></li>
-        <li><h2>Search locally</h2><p><strong>Full-text search with SQLite FTS5.</strong><br>No repeat downloads. No vector service.</p></li>
-        <li><h2>Read what matters</h2><p><strong>Timestamped passages, not a transcript dump.</strong><br>Your agent supplies the reasoning.</p></li>
-      </ol>
-      <p class="local-note">Storage and retrieval run on your machine. Your agent’s model may run elsewhere.</p>
+      <dl class="pipeline">
+        <div><dt>Save once</dt><dd>Markdown + SQLite. Readable offline.</dd></div>
+        <div><dt>Search locally</dt><dd>Full-text search with SQLite FTS5. No re-download.</dd></div>
+        <div><dt>Read what matters</dt><dd>Timestamped passages, not a dump.</dd></div>
+      </dl>
+      <p class="local-note">Retrieval is local. Your model may not be.</p>
     </section>
 
     <section class="setup" aria-label="Set up ytmd">

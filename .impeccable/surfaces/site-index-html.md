@@ -5,49 +5,33 @@ primary_target: "site/index.html"
 related_targets: ["site/style.css", "site/app.js", "site/theme.js", "examples/videos.json"]
 ---
 
-# Landing page: real videos, useful outcomes
+# Landing page: one line, then proof
 
 Mode: Persuade. Existing Pi, Codex, and Claude Code users; not a standalone AI app.
 
-## Latest user direction
+## Direction contract
 
-The single synthetic demo is superseded by six real videos: three technical and
-three business, including Dwarkesh and the supplied Miles Grimshaw episode. The
-user explicitly asked for thumbnails and a simple, compelling outline of the
-local Markdown/SQLite workflow. Preserve the earlier insistence on concise copy.
+THESIS: A video plus a task becomes a plan with timestamps. Refuse a two-column
+essay hero and mid-tone gray type.
 
-THESIS: Recognizable videos become concrete work, not another transcript dump.
+OWN-WORLD: Near-white paper, true black ink, emerald actions. Barlow Semi Condensed
+display, Inter body. Real publisher thumbnails carry the visual weight. Dark mode
+is near-black paper, pale ink, mint actions, and a dedicated wordmark — not inverted photos.
 
-OWN-WORLD: Keep cool paper, navy ink, green actions, Barlow display, and Inter body.
-Real publisher thumbnails supply the visual weight; no new identity round.
+STORY: Read the offer in one line, copy setup, scan six task/results, optionally
+open a plan. Local Markdown/SQLite is explained after the proof.
 
-STORY: Understand the outcome and local workflow, browse six task/results, inspect
-an adapted plan and timestamp evidence, copy setup into an existing agent.
+FIRST VIEWPORT: Full-width stacked hero — large two-line H1, one supporting sentence,
+one green setup button. Then the first row of three thumbnails. Mechanism outline
+stays below the gallery.
 
-FIRST VIEWPORT: Wide two-column hero with one copy action and local Markdown/SQLite
-in the introduction, then three prominent video thumbnails. The mechanism outline
-follows the gallery so mobile visitors see a real thumbnail without scrolling first.
+FORM: Left-aligned, no cards, no eyebrows. Two labelled galleries (Builders, Business).
+Native disclosures for plans. One primary button; theme toggle is a header utility.
 
-FORM: Flat three-across video gallery in two groups; two columns on tablet, one on
-mobile. No source sidebar, tabs, carousels, fake playback, or live AI simulation.
-Native disclosures keep detailed plans and evidence out of the default view.
-
-FINISH: Verify real source quotes, source URLs, captions/coverage labels, image
-loading, local-only resource requests, keyboard, clipboard recovery, no-JS paths,
-responsive layouts, and deployment. No external reviewer score is invented.
-
-## Theme
-
-The user requested a dark-mode toggle after the gallery pass. Preserve cool navy
-and green, with separate dark semantic tokens (not inverted photographs). The header
-utility follows the system until a manual choice, then persists only that preference
-in localStorage. A small pre-CSS script avoids a light flash. CSS follows system dark
-mode without JS; no inert toggle is shown. Storage denial must remain usable.
+FINISH: Browser checks, 4.5:1 contrast in both themes, truthful demo labels, current
+DESIGN.md, verified deployment.
 
 ## Copy and proof
 
-400-word default-copy ceiling for six examples, replacing the one-demo 230-word
-budget. Result text is at most 25 words per video. Plans are explicitly adaptations
-from selected captions, not measured outputs or full-video reviews. Local storage
-and retrieval do not imply the user's model is local. Full transcripts stay out of
-Git and the user's private library is not used as demo material.
+Default copy is 235 words. Result lines stay under 25 words. Plans remain adaptations
+from selected captions. Retrieval is local; the agent’s model may not be.

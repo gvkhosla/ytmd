@@ -145,8 +145,8 @@ class LandingPage(unittest.TestCase):
 
     def test_v05_task_prompt_and_discovery_links(self):
         text = (SITE / "index.html").read_text()
-        self.assertIn('ytmd gives your AI agent YouTube captions, saved as local Markdown + SQLite.', self.doc.text['main'])
-        self.assertIn('not just a summary', self.doc.text['main'])
+        self.assertIn('Give your agent a video and a task.', self.doc.text['main'])
+        self.assertIn('not a summary', self.doc.text['main'])
         structured = re.search(r'<script type="application/ld\+json">(.*?)</script>', text).group(1)
         schema = json.loads(structured)
         self.assertEqual(schema["name"], "ytmd")
@@ -181,6 +181,8 @@ class LandingPage(unittest.TestCase):
         self.assertNotIn('synthetic', self.doc.text['use'])
         self.assertIn('Plans are our adaptations', self.doc.text['use'])
         self.assertIn('not speaker instructions or full-video reviews', self.doc.text['use'])
+        self.assertIn('Builders', self.doc.text['use'])
+        self.assertIn('Business', self.doc.text['use'])
 
     def test_real_timestamps_and_native_disclosures(self):
         citations = [a['href'] for tag, a in self.doc.elements if a.get('class') == 'citation']
@@ -215,7 +217,7 @@ class LandingPage(unittest.TestCase):
         self.assertLessEqual(len(words), 80)
         for term in ('SQLite', 'Markdown', 'Full-text search', 'Timestamped', 'FTS5', 'offline'):
             self.assertIn(term, section)
-        self.assertIn('Your agent’s model may run elsewhere.', section)
+        self.assertIn('Your model may not be.', section)
         self.assertLess(text.index('id="use"'), text.index('class="how-it-works"'))
         self.assertLess(text.index('class="how-it-works"'), text.index('class="setup"'))
 
@@ -236,6 +238,7 @@ class LandingPage(unittest.TestCase):
     def test_display_font_is_self_hosted_and_licensed(self):
         self.assertTrue((SITE / 'assets/BarlowSemiCondensed-SemiBold.ttf').exists())
         self.assertIn('SIL OPEN FONT LICENSE', (SITE / 'assets/Barlow-OFL.txt').read_text())
+        self.assertTrue((SITE / 'assets/wordmark-dark.svg').exists())
 
     def test_setup_prompt_matches_readme(self):
         prompt = " ".join(self.doc.text["agent-prompt"].split())

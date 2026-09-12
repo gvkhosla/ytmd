@@ -1,5 +1,5 @@
 {
-  "note": "Worked examples from selected captions. Plans are our adaptations, not speaker instructions or full-video reviews.",
+  "note": "Selected captions. Plans are our adaptations, not speaker instructions or full-video reviews.",
   "videos": [
     {
       "id": "D7_ipDqhtwk",
@@ -10,7 +10,7 @@
       "duration_s": 909,
       "captions": "auto",
       "task": "Simplify my agent architecture",
-      "result": "Start with an environment, tools, and a prompt. Add complexity only after the basic loop works.",
+      "result": "Start with an environment, tools, and a prompt.",
       "plan": [
         "Define the environment, available tools, goals, and stopping conditions.",
         "Start with one model–tool loop. Inspect the feedback each tool returns.",
@@ -31,7 +31,7 @@
       "duration_s": 2418,
       "captions": "auto",
       "task": "Choose my agent’s sandbox",
-      "result": "Compare shared-kernel containers with microVM isolation. Include GPU needs and snapshot/restore—not just startup speed.",
+      "result": "Compare isolation, GPU needs, and snapshot/restore.",
       "plan": [
         "Define what untrusted code must not access: host data, credentials, and network destinations.",
         "Compare isolation boundaries, GPU support, and I/O costs for your workload.",
@@ -52,7 +52,7 @@
       "duration_s": 3653,
       "captions": "auto",
       "task": "Shrink context without losing it",
-      "result": "Keep bulky tool results in files and their paths in context. Recover the originals instead of trusting a lossy summary.",
+      "result": "Keep bulky results in files, paths in context.",
       "plan": [
         "Persist bulky results; keep paths so the agent can retrieve the originals.",
         "Compact older calls first. Retain recent complete tool examples.",
@@ -73,7 +73,7 @@
       "duration_s": 6931,
       "captions": "manual",
       "task": "Stop relitigating team decisions",
-      "result": "Write down the decision and its reasoning. Future teammates inherit the context, not another meeting.",
+      "result": "Write the decision down so the team can inherit it.",
       "plan": [
         "Pick a recurring decision your team keeps reopening.",
         "Write a one-page note: options, rationale, owner, and a revisit trigger.",
@@ -93,7 +93,7 @@
       "duration_s": 6788,
       "captions": "manual",
       "task": "Stress-test our startup’s moat",
-      "result": "Separate features a rival can rebuild from the customer relationships they still have to earn.",
+      "result": "A rival can copy features, not your customers.",
       "plan": [
         "List the features a well-funded rival could recreate with today’s tools.",
         "Identify customers and ecosystem relationships that a replica would still have to win.",
@@ -114,7 +114,7 @@
       "duration_s": 5008,
       "captions": "auto",
       "task": "Make onboarding worth remembering",
-      "result": "Imagine an absurdly great first experience. Work backwards to one improvement you can actually deliver.",
+      "result": "Invent an absurd first run, then ship one real delight.",
       "plan": [
         "Pick one moment: a customer’s first successful use.",
         "Sketch a five-star, seven-star, and absurd eleven-star version.",

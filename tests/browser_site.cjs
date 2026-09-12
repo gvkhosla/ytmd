@@ -58,7 +58,7 @@ async function checkContrast(page) {
       await page.locator('#theme-toggle').focus(); await page.keyboard.press('Enter');
       assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
       assert.equal(await page.locator('#theme-toggle').getAttribute('aria-label'),'Switch to light mode');
-      assert.equal(await page.locator('meta[name="theme-color"]').getAttribute('content'),'#101820');
+      assert.equal(await page.locator('meta[name="theme-color"]').getAttribute('content'),'#0a0a0a');
       assert.equal(await page.evaluate(()=>localStorage.getItem('ytmd-theme')),'dark');
       assert.equal(await page.locator('.thumbnail img').first().evaluate(el=>getComputedStyle(el).filter),'none');
       await checkContrast(page);
@@ -112,7 +112,7 @@ async function checkContrast(page) {
     const nojs=await browser.newContext({viewport:{width:390,height:844},javaScriptEnabled:false,colorScheme:'dark'});
     const plain=await nojs.newPage(); await plain.goto(base,{waitUntil:'networkidle'});
     assert.equal(await plain.locator('button:visible').count(),0);
-    assert.equal(await plain.locator('body').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(16, 24, 32)');
+    assert.equal(await plain.locator('body').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(10, 10, 10)');
     await plain.locator('#install summary').click();
     assert.equal(await plain.locator('#agent-prompt').isVisible(),true);
     for (const video of videos) {
