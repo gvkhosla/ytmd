@@ -4,9 +4,9 @@
 
 Website: https://gvkhosla.github.io/ytmd/
 Source: https://github.com/gvkhosla/ytmd
-Release: https://github.com/gvkhosla/ytmd/releases/tag/v0.4.5
-Agent skill: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.5/SKILL.md
-Installer to inspect: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.5/install.sh
+Release: https://github.com/gvkhosla/ytmd/releases/tag/v0.4.6
+Agent skill: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.6/SKILL.md
+Installer to inspect: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.6/install.sh
 
 ## Install (only with user permission)
 
@@ -19,7 +19,7 @@ Download and inspect the installer before running it:
 
 ```sh
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.5/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.6/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor --json
 ```
@@ -69,6 +69,14 @@ Only ingest a video the user asked to save or use. URL and VIDEO_ID below are pl
 
 ## Other useful commands
 
+- ytmd add URL URL... --json
+  Multiple inputs return one ordered array on stdout, including on exit 1. Success objects
+  retain status saved/existing. Failures: {status: "error", url: ORIGINAL_INPUT, error: {code, message}}.
+  Rate limits or interruption stop the batch; remaining inputs (including cached videos) become
+  {status: "skipped", url: ORIGINAL_INPUT, error: {code: "batch_stopped", message}} with no requests.
+  Other per-video failures do not stop the batch. Exit 0 = all succeeded; exit 1 = any error/skip.
+  Inspect partial results and preserve successes; do not automatically retry or use --force.
+  Single-video output is unchanged. Human successes go to stdout, errors/skips to stderr.
 - ytmd get "URL" --from 0:00 --to 1:00 --json
   Save if needed, then read a window in one command. JSON includes status: saved/existing.
 - ytmd get "URL" --plain
@@ -89,7 +97,8 @@ Only ingest a video the user asked to save or use. URL and VIDEO_ID below are pl
 
 ## Output and failures
 
-Data commands support --json: one JSON value on stdout; errors are one JSON object on stderr:
+Data commands support --json: one JSON value on stdout; command-level errors are one JSON object
+on stderr (per-input batch errors are included in the stdout array instead):
 {"error":{"code":"captions_unavailable","message":"..."}}
 No progress chatter in JSON mode. Exit 0 = success (including existing/no matches),
 1 = operational failure, 2 = usage error. doctor --json instead returns diagnostics

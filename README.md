@@ -6,7 +6,7 @@ Save a video's captions as local markdown. Search timestamped passages from Pi,
 Codex, Claude Code, or your terminal. One Python script, SQLite, and yt-dlp.
 No API keys, model downloads, or server. Videos need available captions.
 
-[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.4.5)
+[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.4.6)
 
 ## Install
 
@@ -27,7 +27,7 @@ install the CLI and skill for my agent. Verify with ytmd doctor.
 ```bash
 brew install python yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.5/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.6/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
@@ -37,12 +37,12 @@ ytmd doctor
 ```bash
 pipx install yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.5/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.6/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
 
-[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.4.5/install.sh) before running it.
+[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.4.6/install.sh) before running it.
 It verifies release checksums, installs into `~/.local/bin`, and adds skills for
 Pi/Codex (`~/.agents/skills/ytmd`) and Claude Code (`~/.claude/skills/ytmd`).
 Use `--agent pi`, `codex`, `claude`, or `none` instead of `all` to narrow installation.
@@ -74,7 +74,7 @@ ytmd show DHjqpvDnNGE --from 0:25 --to 0:45
 
 | Command | What it does |
 | --- | --- |
-| `ytmd add "URL"` (or `ytmd "URL"`) | Save captions and return the file path |
+| `ytmd add "URL" ["URL" ...]` (or `ytmd "URL"`) | Save captions and report each result |
 | `ytmd get "URL"` | Save if needed, then print the transcript |
 | `ytmd get "URL" --plain` | Text only, without timestamps or metadata; suitable for piping |
 | `ytmd info ID` | Metadata and chapter outline, without the transcript |
@@ -112,13 +112,25 @@ prefer `info` plus a time window over dumping the full transcript.
 differs from an explicit --lang, ytmd reports `language_mismatch` rather than silently
 returning the wrong language. Only one track is stored per video.
 
+**Batch saving:** `ytmd add URL URL... --json` returns one ordered array on stdout,
+even on partial failure. Success objects keep their existing fields and `saved`/`existing`
+status. Failures are `{status: "error", url: ORIGINAL_INPUT, error: {code, message}}`.
+After a rate limit or interruption, all remaining inputs (even cached ones) are
+`{status: "skipped", url: ORIGINAL_INPUT, error: {code: "batch_stopped", message}}`;
+no further requests occur. Exit 0 means every input succeeded; exit 1 means an error
+or skip. Other per-video failures do not abort the batch. Human output streams successes
+to stdout and errors/skips to stderr. Saved transcripts are never rolled back.
+Single-video output/error behavior is unchanged. Inspect batch results even on exit 1;
+wait before retrying rate-limited or skipped inputs, and do not automatically use `--force`.
+
 ## For agents and scripts
 
 [llms.txt](site/llms.txt) describes setup, workflow, command outputs, failures, and safety
 in plain text. [SKILL.md](SKILL.md) is the installable agent skill.
 
 All data commands support `--json`: one JSON value on stdout, no progress chatter.
-Errors go to stderr. `video_unavailable` requires an explicit unavailable status/error
+Errors go to stderr, except per-input batch errors included in the stdout result array.
+`video_unavailable` requires an explicit unavailable status/error
 or an empty extractor stub; missing duration or channel alone is not evidence of deletion.
 `captions_unavailable` means no usable caption track was returned, not proof the video exists:
 

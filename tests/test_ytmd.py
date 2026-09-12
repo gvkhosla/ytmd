@@ -527,7 +527,12 @@ from pathlib import Path
 a=sys.argv[1:]
 assert '--ignore-config' in a
 assert '--skip-download' in a
-mode=os.environ.get('YTMD_TEST_MODE','')
+key=a[-1].rsplit('v=',1)[-1]
+log=os.environ.get('YTMD_TEST_LOG')
+if log:
+    with open(log, 'a') as f:
+        print(key, file=f)
+mode=json.loads(os.environ.get('YTMD_TEST_ERRORS','{}')).get(key, os.environ.get('YTMD_TEST_MODE',''))
 if mode == 'captionless-json':
     print(json.dumps(dict(id='jNQXAC9IVRw', title='Real video', duration=100, channel='Test', subtitles={}, automatic_captions={})))
     sys.exit(0)
@@ -541,7 +546,7 @@ if mode:
     print(mode,file=sys.stderr)
     sys.exit(1)
 if '--dump-single-json' in a:
-    print(json.dumps(dict(id='jNQXAC9IVRw', title='Fixture', duration=100, chapters=[{'start_time':0,'end_time':100,'title':'The only chapter'}], automatic_captions={'en-orig':[{'ext':'json3'}], 'en-de':[{'ext':'json3'}]})))
+    print(json.dumps(dict(id=key, title='Fixture', duration=100, chapters=[{'start_time':0,'end_time':100,'title':'The only chapter'}], automatic_captions={'en-orig':[{'ext':'json3'}], 'en-de':[{'ext':'json3'}]})))
 else:
     assert a[a.index('--sub-langs')+1] == 'en\\\\-orig'
     assert '--write-auto-subs' in a
@@ -553,6 +558,29 @@ else:
         self.pathenv = patch.dict(os.environ, {"PATH": str(bin_dir) + os.pathsep + os.environ.get("PATH", "")})
         self.pathenv.start()
         self.addCleanup(self.pathenv.stop)
+
+    def test_batch_cli_returns_partial_results_and_retains_successes(self):
+        missing, last = "dQw4w9WgXcQ", "7TKqQ2hyM5k"
+        with patch.dict(os.environ, {"YTMD_TEST_ERRORS": json.dumps({missing: "This video is unavailable"})}):
+            p = self.cli("add", KEY, missing, last, "--json")
+        self.assertEqual(p.returncode, 1)
+        self.assertEqual(p.stderr, "")
+        data = json.loads(p.stdout)
+        self.assertEqual([r["status"] for r in data], ["saved", "error", "saved"])
+        self.assertEqual(data[1]["error"]["code"], "video_unavailable")
+        self.assertEqual({r["id"] for r in json.loads(self.cli("list", "--json").stdout)}, {KEY, last})
+        for result in (data[0], data[2]):
+            self.assertTrue(Path(result["path"]).exists())
+
+    def test_batch_cli_stops_requests_on_rate_limit(self):
+        limited, last = "dQw4w9WgXcQ", "7TKqQ2hyM5k"
+        log = self.root / "requests.log"
+        with patch.dict(os.environ, {"YTMD_TEST_ERRORS": json.dumps({limited: "HTTP Error 429: Too Many Requests"}), "YTMD_TEST_LOG": str(log)}):
+            p = self.cli("add", KEY, limited, last, "--json")
+        self.assertEqual(p.returncode, 1)
+        self.assertEqual(p.stderr, "")
+        self.assertEqual([r["status"] for r in json.loads(p.stdout)], ["saved", "error", "skipped"])
+        self.assertEqual(log.read_text().splitlines(), [KEY, KEY, limited])
 
     def test_end_to_end_ingest_search_show(self):
         p = self.cli(KEY, "--json")

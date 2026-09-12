@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.6
+
+- Batch `add` reports every input in order, preserving successful saves when another video fails. JSON returns an array with per-input errors and exits 1 on any failure; single-video behavior is unchanged.
+- Stop batch processing after a rate limit or interruption and mark remaining inputs as skipped, without further requests.
+- Human output streams successes to stdout and failures/skips to stderr.
+
 ## 0.4.5
 
 - Do not classify missing metadata or placeholder-like titles alone as unavailable videos; allow live and caption-bearing metadata through.

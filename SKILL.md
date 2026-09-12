@@ -18,7 +18,7 @@ With permission, inspect then run:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.5/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.6/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor --json
 ```
@@ -50,6 +50,11 @@ metadata/timestamps for text-only exports, but cannot be combined with `--json`.
 
 ## Library
 
+- `ytmd add URL URL... --json`: save only the requested videos. Multiple inputs return
+  an ordered stdout array, including on exit 1. Inspect each `status`: `saved`, `existing`,
+  `error`, or `skipped`. Errors include the original input as `url` and `error: {code, message}`.
+  Rate limits or interruption stop the batch; remaining inputs are skipped (`batch_stopped`).
+  Do not retry automatically or discard successes because the command exits 1.
 - `ytmd list "title or channel" --limit 20 --offset 0 --json`: find saved videos by
   literal substring (title, channel, or ID). Default limit 50, max 100; offset paginates.
   JSON includes `uploaded_at` and `ingested_at`.
@@ -62,7 +67,8 @@ records. No automatic QMD/Pickbrain integration; markdown may be indexed separat
 
 ## Failures and safety
 
-- Data on stdout, errors on stderr. `--json` suppresses progress and emits structured
+- Data on stdout, errors on stderr (per-input batch errors are in the stdout array).
+  `--json` suppresses progress and emits structured
   output. Exit 0 = success (including existing/no matches), 1 = failure, 2 = usage error.
   `doctor` returns diagnostics instead of the standard error envelope.
 - `rate_limited`: wait; do not retry in a loop or promise cookies will fix it.

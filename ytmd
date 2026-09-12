@@ -18,7 +18,7 @@ import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "0.4.5"
+VERSION = "0.4.6"
 SCHEMA = 2
 ID = re.compile(r"[A-Za-z0-9_-]{11}\Z")
 LANG = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -543,19 +543,46 @@ def ensure_saved(args):
 
 def cmd_add(args):
     urls = args.urls if getattr(args, "urls", None) else [args.url]
+    batch = len(urls) > 1
     results = []
-    texts = []
+    stopped = None
+    failed = False
     for url in urls:
-        one = argparse.Namespace(**vars(args))
-        one.url = url
-        row, data = ensure_saved(one)
-        results.append(data)
-        hint = f"Outline: ytmd info {row['id']}" if data["chapters"] else f"Read: ytmd show {row['id']} --from 0:00 --to 1:00"
-        texts.append(f"{data['status']}: {row['title']}\n{data['path']}\n{hint}")
+        if stopped:
+            error = Error("batch_stopped", f"Not attempted after {stopped}.")
+            status = "skipped"
+        else:
+            one = argparse.Namespace(**vars(args))
+            one.url = url
+            try:
+                row, data = ensure_saved(one)
+            except BrokenPipeError:
+                raise
+            except Error as e:
+                error = e
+            except (OSError, sqlite3.Error, ValueError, KeyError, TypeError) as e:
+                error = Error("operation_failed", str(e))
+            except KeyboardInterrupt:
+                error = Error("interrupted", "Cancelled.")
+            else:
+                results.append(data)
+                if not args.json:
+                    hint = f"Outline: ytmd info {row['id']}" if data["chapters"] else f"Read: ytmd show {row['id']} --from 0:00 --to 1:00"
+                    print(f"{data['status']}: {row['title']}\n{data['path']}\n{hint}", flush=True)
+                continue
+            # Keep the single-video error envelope and exit behavior unchanged.
+            if not batch:
+                raise error
+            status = "error"
+            if error.code in ("rate_limited", "interrupted"):
+                stopped = error.code
+        failed = True
+        results.append(dict(status=status, url=url, error=dict(code=error.code, message=error.message)))
+        if not args.json:
+            print(f"ytmd: {status}: {url}: {error.code}: {error.message}", file=sys.stderr)
     if args.json:
-        print(json.dumps(results if len(results) > 1 else results[0], ensure_ascii=False, indent=2))
-        return
-    print("\n".join(texts))
+        print(json.dumps(results if batch else results[0], ensure_ascii=False, indent=2))
+    return 1 if failed else 0
 
 
 def window(cues, start, end=None):
@@ -746,7 +773,7 @@ def parser():
     p = Parser(description=__doc__, epilog="Start: ytmd get URL | Outline: ytmd info ID | Search: ytmd search WORDS | Read: ytmd show ID --from 0:00 --to 1:00. Library: ~/ytmd (override YTMD_DIR).")
     p.add_argument("--version", action="version", version=f"ytmd {VERSION}")
     sub = p.add_subparsers(dest="command", required=True)
-    for name, help_text, handler in [("add", "save a video's captions", cmd_add), ("get", "save if needed, then print the transcript", cmd_get), ("search", "search timestamped passages", cmd_search), ("show", "read a video or time window", cmd_show), ("info", "metadata and chapters", cmd_info), ("list", "list saved videos", cmd_list), ("export", "rebuild markdown from SQLite", cmd_export), ("rm", "delete a saved video", cmd_rm), ("doctor", "check local dependencies", cmd_doctor), ("path", "print library location", None)]:
+    for name, help_text, handler in [("add", "save captions for one or more videos", cmd_add), ("get", "save if needed, then print the transcript", cmd_get), ("search", "search timestamped passages", cmd_search), ("show", "read a video or time window", cmd_show), ("info", "metadata and chapters", cmd_info), ("list", "list saved videos", cmd_list), ("export", "rebuild markdown from SQLite", cmd_export), ("rm", "delete a saved video", cmd_rm), ("doctor", "check local dependencies", cmd_doctor), ("path", "print library location", None)]:
         s = sub.add_parser(name, help=help_text, description=help_text)
         formats = s.add_mutually_exclusive_group()
         formats.add_argument("--json", action="store_true", help="machine-readable output (errors too)")
