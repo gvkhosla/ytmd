@@ -18,7 +18,7 @@ import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "0.4.7"
+VERSION = "0.4.8"
 SCHEMA = 2
 ID = re.compile(r"[A-Za-z0-9_-]{11}\Z")
 LANG = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -618,6 +618,55 @@ def cmd_get(args):
     print_transcript(row, args, dict(status=data["status"]))
 
 
+def diverse_hits(rows, limit):
+    """Round-robin videos in best-hit order; retain at most limit hits per video."""
+    videos = {}
+    for row in rows:
+        hits = videos.setdefault(row["video_id"], [])
+        if len(hits) < limit:
+            hits.append(row)
+        # Enough distinct videos to fill the first round. No need to scan more.
+        if len(videos) == limit:
+            break
+    return [hits[i] for i in range(limit) for hits in videos.values() if i < len(hits)][:limit]
+
+
+def merge_search_context(results, sources, context):
+    """Merge selected windows, retaining the best hit and every original citation."""
+    by_video, grouped = {}, []
+    for rank, hit in enumerate(results):
+        nearby = window(sources[hit["video_id"]], max(0, hit["start"] - context), hit["end"] + context)
+        if not nearby:
+            grouped.append((rank, hit))
+            continue
+        by_video.setdefault(hit["video_id"], []).append(dict(
+            start=nearby[0]["start"], end=max(c["end"] for c in nearby),
+            hits=[(rank, hit)], cues={id(c) for c in nearby}))
+    for key, spans in by_video.items():
+        merged = []
+        for span in sorted(spans, key=lambda s: (s["start"], s["end"])):
+            if merged and span["start"] <= merged[-1]["end"]:
+                previous = merged[-1]
+                previous["end"] = max(previous["end"], span["end"])
+                previous["hits"].extend(span["hits"])
+                previous["cues"].update(span["cues"])
+            else:
+                merged.append(span)
+        for span in merged:
+            rank, best = min(span["hits"], key=lambda item: item[0])
+            result = dict(best)
+            # Deduplicate cue identities, never repeated words or speech. Reusing
+            # the exact selected cues also preserves zero-duration boundary cues.
+            nearby = [c for c in sources[key] if id(c) in span["cues"]]
+            result["context"] = dict(start=span["start"], end=span["end"],
+                                     text=transcript(nearby), url=url_for(key, span["start"]))
+            if len(span["hits"]) > 1:
+                result["matches"] = [{field: hit[field] for field in ("start", "end", "text", "url", "score")}
+                                     for _, hit in sorted(span["hits"], key=lambda item: (item[1]["start"], item[0]))]
+            grouped.append((rank, result))
+    return [hit for _, hit in sorted(grouped, key=lambda item: item[0])]
+
+
 def cmd_search(args):
     tokens = re.findall(r"\w+", " ".join(args.query), re.UNICODE)
     if not tokens:
@@ -630,22 +679,28 @@ def cmd_search(args):
     with closing(connect()) as conn:
         key = resolve(conn, args.video)["id"] if args.video else None
         channel = (args.channel or "").strip() or None
-        rows = conn.execute("""SELECT v.id AS video_id,v.title,v.captions,v.lang,v.caption_format,p.start,p.end,p.text,
+        sql = """SELECT v.id AS video_id,v.title,v.captions,v.lang,v.caption_format,p.start,p.end,p.text,
             bm25(passages_fts) AS score FROM passages_fts
             JOIN passages p ON p.id=passages_fts.rowid JOIN videos v ON v.id=p.video_id
             WHERE passages_fts MATCH ? AND (? IS NULL OR v.id=?) AND (? IS NULL OR v.channel = ?)
-            ORDER BY score,p.video_id,p.start LIMIT ?""", (query, key, key, channel, channel, args.limit)).fetchall()
+            ORDER BY score,p.video_id,p.start,p.id"""
+        params = (query, key, key, channel, channel)
+        if args.diverse:
+            # Stream the ranked cursor instead of truncating a global top-N pool:
+            # a prolific video must not hide all matches from another video.
+            rows = diverse_hits(conn.execute(sql, params), args.limit)
+        else:
+            rows = conn.execute(sql + " LIMIT ?", (*params, args.limit)).fetchall()
         results = [dict(r, url=url_for(r["video_id"], r["start"])) for r in rows]
         if args.context:
-            sources = {}
-            for r in results:
-                key = r["video_id"]
-                if key not in sources:
-                    sources[key] = json.loads(conn.execute("SELECT cues_json FROM videos WHERE id=?", (key,)).fetchone()[0])
-                nearby = window(sources[key], max(0, r["start"] - args.context), r["end"] + args.context)
-                if nearby:
-                    r["context"] = dict(start=nearby[0]["start"], end=max(c["end"] for c in nearby), text=transcript(nearby), url=url_for(key, nearby[0]["start"]))
-    text = "\n\n".join(f"{r['video_id']}  {r['title']} [{timestamp(r['start'])}]\n{r.get('context', {}).get('text', r['text'])}\n{r['url']}" for r in results) or "No matches. Try fewer keywords or --match any; search is lexical, not semantic."
+            sources = {key: json.loads(conn.execute("SELECT cues_json FROM videos WHERE id=?", (key,)).fetchone()[0])
+                       for key in dict.fromkeys(r["video_id"] for r in results)}
+            results = merge_search_context(results, sources, args.context)
+    blocks = []
+    for r in results:
+        merged = f" · {len(r['matches'])} matches" if "matches" in r else ""
+        blocks.append(f"{r['video_id']}  {r['title']} [{timestamp(r['start'])}]{merged}\n{r.get('context', {}).get('text', r['text'])}\n{r['url']}")
+    text = "\n\n".join(blocks) or "No matches. Try fewer keywords or --match any; search is lexical, not semantic."
     if results:
         top = results[0]
         span = top.get("context", top)
@@ -840,9 +895,10 @@ def parser():
             s.add_argument("query", nargs="+")
             s.add_argument("--video", help="restrict to this video ID/title")
             s.add_argument("--channel", help="restrict to this exact channel name")
-            s.add_argument("-n", "--limit", type=positive, default=10)
+            s.add_argument("-n", "--limit", type=positive, default=10, help="maximum selected matches before context merging (default 10)")
             s.add_argument("--match", choices=("all", "any", "phrase"), default="all", help="match all query words (default), any of them, or the words as one phrase")
-            s.add_argument("--context", type=context_arg, default=0, metavar="SECONDS", help="include 0–120 seconds around each matched passage")
+            s.add_argument("--context", type=context_arg, default=0, metavar="SECONDS", help="include 0–120 seconds around each match; merge overlapping windows")
+            s.add_argument("--diverse", action="store_true", help="spread selected hits across videos, one per video per round")
         elif name == "list":
             s.add_argument("query", nargs="?", help="filter by title, channel, or ID (literal substring)")
             s.add_argument("-n", "--limit", type=positive, default=50)

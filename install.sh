@@ -1,7 +1,7 @@
 #!/bin/sh
 # Install a pinned release. No sudo, shell-profile edits, cookies, or model downloads.
 set -eu
-VERSION=0.4.7
+VERSION=0.4.8
 AGENT=shared
 SOURCE=
 while [ "$#" -gt 0 ]; do

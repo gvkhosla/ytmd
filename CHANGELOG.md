@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.8
+
+- Search with context merges overlapping or touching windows from the same video. Keep the best hit's fields unchanged and include all selected citations in `matches` for merged groups; repeated speech is preserved.
+- Add `search --diverse` to select hits round-robin across videos in best-hit order. Relevance ranking remains the default; video/channel filters still apply.
+- `-n` limits selected matches before merging, so output can contain fewer windows. Search without context keeps the individual-hit shape.
+
 ## 0.4.7
 
 - `doctor` reports the resolved running CLI path and ytmd installations in PATH order, warning about distinct installations.

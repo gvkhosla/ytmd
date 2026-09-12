@@ -4,9 +4,9 @@
 
 Website: https://gvkhosla.github.io/ytmd/
 Source: https://github.com/gvkhosla/ytmd
-Release: https://github.com/gvkhosla/ytmd/releases/tag/v0.4.7
-Agent skill: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.7/SKILL.md
-Installer to inspect: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.7/install.sh
+Release: https://github.com/gvkhosla/ytmd/releases/tag/v0.4.8
+Agent skill: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.8/SKILL.md
+Installer to inspect: https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.8/install.sh
 
 ## Install (only with user permission)
 
@@ -19,7 +19,7 @@ Download and inspect the installer before running it:
 
 ```sh
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.7/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.8/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor --json
 ```
@@ -49,9 +49,17 @@ Only ingest a video the user asked to save or use. URL and VIDEO_ID below are pl
    ytmd search "keywords" --video VIDEO_ID --context 15 -n 5 --json
    Omit --video for library-wide search. Results contain video_id, title, captions,
    lang, caption_format, start, end, text, score, url. With --context, each result
-   additionally contains context: {start, end, text, url}. The root fields still
-   identify the matching passage. Context can overlap between neighboring hits.
-   --context accepts 0–120 seconds on either side. -n accepts 1–100 (default 10).
+   additionally contains context: {start, end, text, url}. Overlapping or touching windows
+   from the same video merge. Root fields retain the best-ranked hit; merged groups also
+   include matches: [{start, end, text, url, score}] for all selected hits, including the
+   representative, in chronological order. Unmerged hits have no matches field.
+   Context uses the union of original cues, preserving repeated speech. A merged span can
+   exceed one hit's requested context; it is not itself one matching passage.
+   --context accepts 0–120 seconds on either side. -n accepts 1–100 (default 10) and limits
+   selected hits BEFORE merging, so fewer windows may return. --context 0 keeps individual hits.
+   Use --diverse for cross-video coverage: one hit per video per round in best-hit order,
+   before merging. Default ranking is relevance-first. --video/--channel filters still apply.
+   Diverse selection may scan all matching passages; it retains at most -n hits per video.
    All words must match by default. Use fewer words, --match any, or --match phrase.
    --match phrase requires the words to appear next to each other, in order.
    Search is lexical, not semantic. It does not invent answers.

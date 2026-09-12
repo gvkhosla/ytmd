@@ -6,7 +6,7 @@ Save a video's captions as local markdown. Search timestamped passages from Pi,
 Codex, Claude Code, or your terminal. One Python script, SQLite, and yt-dlp.
 No API keys, model downloads, or server. Videos need available captions.
 
-[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.4.7)
+[Website](https://gvkhosla.github.io/ytmd/) · [Plain-text agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [Release](https://github.com/gvkhosla/ytmd/releases/tag/v0.4.8)
 
 ## Install
 
@@ -27,7 +27,7 @@ install the CLI and skill for my agent. Verify with ytmd doctor.
 ```bash
 brew install python yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.7/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.8/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
@@ -37,12 +37,12 @@ ytmd doctor
 ```bash
 pipx install yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.7/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.8/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
 
-[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.4.7/install.sh) before running it.
+[Read the installer](https://github.com/gvkhosla/ytmd/blob/v0.4.8/install.sh) before running it.
 It verifies release checksums, installs into `~/.local/bin`, and adds skills for
 Pi/Codex (`~/.agents/skills/ytmd`) and Claude Code (`~/.claude/skills/ytmd`).
 Use `--agent pi`, `codex`, `claude`, or `none` instead of `all` to narrow installation.
@@ -81,6 +81,7 @@ ytmd show DHjqpvDnNGE --from 0:25 --to 0:45
 | `ytmd search "words" --video ID --json` | Find matching passages in one video |
 | `ytmd search "words" --match any --context 15` | Match any word and include nearby captions |
 | `ytmd search "words" --match phrase` | Require the words to appear next to each other |
+| `ytmd search "words" --diverse --context 15` | Spread hits across videos and merge overlapping context |
 | `ytmd show ID --from 12:00 --to 15:00` | Read a time window from a saved video |
 | `ytmd list "title or channel" --limit 20 --offset 0` | Filter and paginate saved videos |
 | `ytmd export [directory]` | Rebuild markdown from SQLite |
@@ -94,11 +95,20 @@ Whole cues overlapping a window are included, so a sentence may extend beyond it
 
 **Search:** lexical, not semantic. All words must match within a passage by default;
 `--match any` broadens this, `--match phrase` requires them in order. Punctuation separates words; FTS operators aren't exposed.
-`--context 0–120` adds that many seconds around each hit. Nearby hits may have overlapping
-context. `-n` limits results (default 10, max 100). `--video` accepts an ID, URL, or unambiguous title.
-Human output suggests a bounded `show --from … --to …` command for the top hit:
-a two-minute window, extended if needed to include the full hit or requested context.
-JSON search output is unchanged.
+`--context 0–120` adds that many seconds around each selected hit. Overlapping or touching
+windows from the same video are merged; text comes from the union of their original cues,
+not deduplicated words. A merged window can span longer than one hit's requested context.
+`-n` limits selected matches **before merging** (default 10, max 100), so output may contain
+fewer windows. `--context 0` keeps individual hits. `--video` accepts an ID, URL, or unambiguous title.
+
+Relevance ranking is the default. `--diverse` selects one hit per matching video per round,
+with videos ordered by their best hit. It applies before context merging and still respects
+`--video` and `--channel`; with one video it retains relevance order. It can scan all matching
+passages when there are fewer matching videos than `-n`, retaining at most `-n` hits per video.
+
+Human output labels merged groups with their match count and suggests a bounded
+`show --from … --to …` command for the top result: a two-minute window, extended if needed
+to include the full hit or merged context.
 
 **List:** optional literal substring filter on title, channel, or ID. Default limit 50,
 max 100. Use `--offset` for subsequent pages. JSON includes local markdown paths, `uploaded_at`, and `ingested_at`.
@@ -154,7 +164,11 @@ update dependencies, or edit PATH.
 
 Search results include the matching passage's `video_id`, `title`, `start`, `end`,
 `text`, `url`, caption provenance, and score. `--context` adds a separate
-`context: {start, end, text, url}` object without changing the matching passage fields.
+`context: {start, end, text, url}` object. A merged group keeps its best-ranked hit's root
+fields unchanged and adds `matches: [{start, end, text, url, score}]` for **all** selected
+hits in that group (including the representative), in chronological order. Context spans
+the union of selected windows. Unmerged hits have no `matches` field. Do not mistake a
+merged context span for one matching passage or claim coverage beyond the selected hits.
 get/show return metadata, `chapters`, and `passages: [{start, end, text, url}]`; get adds `status`.
 `info` returns the same metadata and `chapters` without passages.
 

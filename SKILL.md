@@ -22,7 +22,7 @@ With permission, inspect then run:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.7/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.4.8/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor --json
 ```
@@ -42,6 +42,11 @@ Ask before persisting PATH changes. Do not invent a replacement scraper.
    Omit `--video` to search across videos. Search matches all words by default;
    use shorter queries, `--match any`, or `--match phrase` to change matching.
    Context is optional (0–120 seconds on either side); keep it small to avoid filling the session.
+   Overlapping/touching windows from one video merge. Root fields identify the best hit;
+   `matches` lists every selected hit's timestamp/text/URL/score in merged groups. A merged
+   context is not one matching passage. `-n` limits hits before merging, so fewer windows may return.
+   For cross-video coverage, add `--diverse` to select one hit per video per round. Default
+   ranking remains relevance-first; `--video` and `--channel` still restrict the search.
 4. Read a window: `ytmd show VIDEO_ID --from 12:00 --to 15:00 --json`.
    Or save-and-read at once: `ytmd get "URL" --from 0:00 --to 1:00 --json`.
 5. Cite title + returned timestamp URL. Distinguish source claims from your suggestions
