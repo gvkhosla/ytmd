@@ -4,3 +4,10 @@ __pycache__/
 *.db
 *.db-shm
 *.db-wal
+.impeccable/review/
+.impeccable/references/
+.impeccable/questions/
+.impeccable/mocks/
+.impeccable/direction-options.json
+.impeccable/source-review-brief.md
+.impeccable/browser-check.cjs

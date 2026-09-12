@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base href="{{BASE}}">
+<title>ytmd social card source</title>
+<style>
+@font-face { font-family: Barlow; src: url('assets/BarlowSemiCondensed-SemiBold.ttf'); font-weight: 600; }
+@font-face { font-family: Inter; src: url('assets/InterVariable.woff2'); font-weight: 100 900; }
+* { box-sizing: border-box; }
+body { margin: 0; width: 1200px; height: 630px; padding: 44px 48px; background: #f4f6fa; color: #172638; font-family: Inter, sans-serif; }
+header, footer { display: flex; align-items: center; justify-content: space-between; }
+header { font-size: 16px; color: #526071; }
+img { width: 104px; height: 32px; }
+main { display: grid; grid-template-columns: 440px 1fr; gap: 52px; align-items: center; margin-top: 44px; }
+h1 { font: 600 80px/.98 Barlow, sans-serif; letter-spacing: -.02em; margin: 0; }
+h1 span { color: #195e54; }
+p { margin: 0; }
+.intro p { font-size: 21px; line-height: 1.6; margin-top: 24px; max-width: 31ch; }
+.review { background: white; border: 1px solid #c6d1db; }
+.heading { padding: 14px 20px; background: #172638; color: white; font-size: 15px; }
+.answer { padding: 22px; font-size: 19px; line-height: 1.55; }
+.answer strong { display: block; margin-bottom: 8px; }
+.time { color: #195e54; font: 500 15px monospace; background: #e3eee8; padding: 3px 6px; white-space: nowrap; }
+.source { background: #edf1f5; border-top: 1px solid #d7dfe7; padding: 20px 22px; font-size: 15px; line-height: 1.65; }
+.source strong { display: block; margin-bottom: 8px; font-size: 13px; color: #195e54; }
+footer { margin-top: 34px; font-size: 14px; color: #526071; }
+</style>
+</head>
+<body>
+<header><img src="assets/wordmark.svg" alt="ytmd"><p>YouTube evidence for your existing agent</p></header>
+<main>
+<div class="intro"><h1>Make the video<br><span>useful.</span></h1><p>Learn the technique. Keep the exceptions. Put it to work.</p></div>
+<div class="review"><p class="heading">An illustrative answer, with its evidence</p><div class="answer"><strong>Keep tenants apart.</strong><p>Include the tenant ID in the cache key. Test two tenants requesting the same resource ID. <span class="time">5:00</span></p></div><div class="source"><strong>Synthetic source · 5:00</strong><p>Key example: tenant ID must be part of the cache key. A shared key can expose one tenant's data to another. Test two tenants requesting the same resource ID.</p></div></div>
+</main>
+<footer><p>Pi · Codex · Claude Code</p><p>gvkhosla.github.io/ytmd</p></footer>
+</body>
+</html>

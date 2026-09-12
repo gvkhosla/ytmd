@@ -3,129 +3,176 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f8f9f5">
-  <title>ytmd — Use what you learn from YouTube</title>
-  <meta name="description" content="Understand, learn from, and apply YouTube videos with your existing agent. Local captions, chapter reads, and timestamped evidence at the depth your task needs.">
+  <meta name="theme-color" content="#f4f6fa">
+  <title>ytmd — Make the video useful</title>
+  <meta name="description" content="Go from a YouTube video to useful understanding with Pi, Codex, or Claude Code. Learn the technique, keep the exceptions, and trace the answer back to its source.">
   <link rel="canonical" href="https://gvkhosla.github.io/ytmd/">
   <link rel="alternate" type="text/plain" title="Agent instructions" href="./llms.txt">
+  <link rel="sitemap" type="application/xml" href="./sitemap.xml">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="ytmd — Use what you learn from YouTube">
-  <meta property="og:description" content="Understand an argument, learn a technique, or apply an idea. Timestamped evidence for your existing Pi, Codex, or Claude Code agent.">
+  <meta property="og:title" content="ytmd — Make the video useful">
+  <meta property="og:description" content="A useful answer. The evidence behind it. Learn from YouTube at the depth your task needs, with your existing agent.">
   <meta property="og:url" content="https://gvkhosla.github.io/ytmd/">
-  <meta property="og:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.5.0">
+  <meta property="og:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.5.0-review1">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ytmd — YouTube transcripts, ready for your agent. Markdown and SQLite. Local files, no API keys.">
+  <meta property="og:image:alt" content="ytmd — Make the video useful. An illustrative source-and-answer review for your existing agent.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="ytmd — Use what you learn from YouTube">
-  <meta name="twitter:description" content="Go from a video to useful understanding. Chapter reads and timestamped evidence for your existing agent.">
-  <meta name="twitter:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.5.0">
+  <meta name="twitter:title" content="ytmd — Make the video useful">
+  <meta name="twitter:description" content="Understand, learn, and apply YouTube videos with your existing agent. Useful answers with inspectable evidence.">
+  <meta name="twitter:image" content="https://gvkhosla.github.io/ytmd/assets/social.png?v=0.5.0-review1">
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
+  <link rel="preload" href="./assets/BarlowSemiCondensed-SemiBold.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="./assets/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./style.css?v=0.5.0">
-  <link rel="sitemap" type="application/xml" href="./sitemap.xml">
-  <script src="./app.js?v=0.5.0" defer></script>
+  <link rel="stylesheet" href="./style.css?v=0.5.0-review1">
+  <script src="./app.js?v=0.5.0-review1" defer></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"ytmd","url":"https://gvkhosla.github.io/ytmd/","description":"Local captions, chapter reads, and timestamped evidence for understanding and applying YouTube videos with an existing agent.","applicationCategory":"DeveloperApplication","operatingSystem":"macOS, Linux","softwareVersion":"0.5.0","license":"https://github.com/gvkhosla/ytmd/blob/v0.5.0/LICENSE","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="./" aria-label="Homepage"><img src="./assets/wordmark.svg" width="104" height="32" alt="ytmd"></a>
-      <nav class="desktop-nav" aria-label="Main navigation"><a href="#install">Install</a><a href="#use">Use</a><a href="./llms.txt">For agents</a><a href="https://github.com/gvkhosla/ytmd">GitHub ↗</a></nav>
-      <details class="mobile-menu"><summary>Menu</summary><nav aria-label="Mobile navigation"><a href="#install">Install</a><a href="#use">Use</a><a href="./llms.txt">For agents</a><a href="https://github.com/gvkhosla/ytmd">GitHub ↗</a></nav></details>
+      <a class="brand" href="./" aria-label="ytmd homepage"><img src="./assets/wordmark.svg" width="104" height="32" alt="ytmd"></a>
+      <nav class="desktop-nav" aria-label="Main navigation"><a href="#use">See it work</a><a href="./llms.txt">Agent guide</a><a href="https://github.com/gvkhosla/ytmd">GitHub</a><a class="nav-install" href="#install">Get ytmd</a></nav>
+      <details class="mobile-menu"><summary>Menu</summary><nav aria-label="Mobile navigation"><a href="#use">See it work</a><a href="#install">Get ytmd</a><a href="./llms.txt">Agent guide</a><a href="https://github.com/gvkhosla/ytmd">GitHub</a></nav></details>
     </div>
   </header>
   <main id="main">
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="container hero-grid">
-        <div>
-          <h1 id="hero-title">Use what you learn<br>from YouTube.</h1>
-          <p class="hero-description">Understand an argument, learn a technique, or apply an idea. Give your existing agent source evidence at the depth your task needs.</p>
-          <p class="hero-note">Local captions. No extra model service. Open source · v0.5.0</p>
-          <div class="hero-links"><a href="#install">Install ytmd</a><a href="https://github.com/gvkhosla/ytmd/blob/v0.5.0/examples/README.md">See understand, learn, apply examples</a></div>
+    <section class="hero container" aria-labelledby="hero-title">
+      <div class="hero-intro">
+        <h1 id="hero-title">Make the video<br><span>useful.</span></h1>
+        <div class="hero-description">
+          <p>Turn a YouTube video into something you can use.</p>
+          <p>Understand the reasoning. Learn the technique. Apply it to your project, with the source close at hand.</p>
+          <a class="button primary" href="#install">Set up with your agent <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a>
+          <p class="agent-compatibility">Works with Pi, Codex &amp; Claude Code. Open source.</p>
         </div>
-        <aside class="file-preview" aria-label="Where your transcripts are stored">
-          <div class="preview-heading"><p class="small">Your evidence, kept locally</p><p class="mono">~/ytmd/</p></div>
-          <div class="file-entry"><p class="file-name">DHjqpvDnNGE.md</p><p>The transcript, with links to the video’s timestamps.</p></div>
-          <div class="file-entry"><p class="file-name">ytmd.db</p><p>Original captions, metadata, and a SQLite search index.</p></div>
-          <p class="preview-note">Read a chapter, follow budgeted pages, or retrieve evidence for a task. Your agent explains it; timestamps let you inspect the source.</p>
-        </aside>
       </div>
+
+      <section class="review" id="use" aria-labelledby="review-title">
+        <header class="review-header">
+          <h2 id="review-title">One lesson. Different things to do with it.</h2>
+          <a class="fixture-link" href="https://github.com/gvkhosla/ytmd/blob/v0.5.0/evals/cases.json">Synthetic example: safer caching</a>
+        </header>
+        <div class="review-toolbar" id="demo-controls" hidden>
+          <div class="mode-tabs" role="tablist" aria-label="Choose an example task">
+            <button type="button" role="tab" id="tab-understand" aria-controls="answer-understand" aria-selected="false" tabindex="-1" data-mode="understand">Understand</button>
+            <button type="button" role="tab" id="tab-learn" aria-controls="answer-learn" aria-selected="false" tabindex="-1" data-mode="learn">Learn</button>
+            <button type="button" role="tab" id="tab-apply" aria-controls="answer-apply" aria-selected="true" tabindex="0" data-mode="apply">Apply</button>
+          </div>
+          <p class="review-hint">Follow any timestamp to its evidence.</p>
+        </div>
+        <div class="review-grid">
+          <aside class="source-column" aria-labelledby="source-title">
+            <div class="column-heading"><h3 id="source-title">The source</h3><span id="source-count">8 fixture passages</span></div>
+            <div class="source-scroll" id="source-passages" tabindex="0" aria-label="Synthetic caption excerpts">
+              <article class="source-passage" id="source-0" tabindex="-1"><p class="source-time">0:00 <span>Purpose</span></p><p id="quote-0">The purpose of this cache is to reduce repeated database reads, not to repair an inefficient underlying query.</p></article>
+              <article class="source-passage" id="source-60" tabindex="-1"><p class="source-time">1:00 <span>Prerequisites</span></p><p id="quote-60">Prerequisites: measure baseline latency and errors, and confirm that this endpoint permits data up to thirty seconds old. Never use this recipe for authorization decisions.</p></article>
+              <article class="source-passage" id="source-120" tabindex="-1"><p class="source-time">2:00 <span>Rollout</span></p><p id="quote-120">Rollout procedure: shadow reads first, compare the cached and uncached responses, then enable caching for five percent of traffic behind a reversible flag.</p></article>
+              <article class="source-passage" id="source-180" tabindex="-1"><p class="source-time">3:00 <span>Example, not a rule</span></p><p id="quote-180">TTL example: use thirty seconds for an inventory preview that tolerates stale data. This is an example, not a universal TTL recommendation.</p></article>
+              <article class="source-passage" id="source-240" tabindex="-1"><p class="source-time">4:00 <span>Rollback</span></p><p id="quote-240">Rollback condition: if the error rate increases by more than one percentage point over baseline, disable the flag and restore uncached reads. Keep monitoring after rollback.</p></article>
+              <article class="source-passage" id="source-300" tabindex="-1"><p class="source-time">5:00 <span>Tenant isolation</span></p><p id="quote-300">Key example: tenant ID must be part of the cache key. A shared key can expose one tenant's data to another. Test two tenants requesting the same resource ID.</p></article>
+              <article class="source-passage" id="source-360" tabindex="-1"><p class="source-time">6:00 <span>Trade-offs</span></p><p id="quote-360">The tradeoff is that shorter TTL reduces staleness but increases database load. Benchmark with your own workload; there is no promised speedup.</p></article>
+              <article class="source-passage" id="source-420" tabindex="-1"><p class="source-time">7:00 <span>What is not specified</span></p><p id="quote-420">This lesson does not prescribe a cache vendor, SDK, or language-specific implementation.</p></article>
+            </div>
+            <p class="source-help">Scroll here, or select a timestamp to find its passage.</p>
+          </aside>
+          <div class="answer-column">
+            <div class="column-heading"><h3>A useful answer</h3><span>Authored illustration</span></div>
+            <section class="answer" id="answer-understand" aria-label="Understand example" data-sources="source-0 source-60 source-360">
+              <p class="question">“Is this technique relevant to my slow endpoint?”</p>
+              <div class="answer-body">
+                <h4>First, check what is actually slow.</h4>
+                <p>This cache can reduce repeated database reads. It will not fix an inefficient underlying query. <a class="citation" href="#source-0" aria-label="Read the fixture passage at 0:00">0:00</a></p>
+                <h4>The condition matters as much as the idea.</h4>
+                <p>Your endpoint must tolerate stale data. Measure latency and errors first, and don’t apply this recipe to authorization decisions. <a class="citation" href="#source-60" aria-label="Read the fixture passage at 1:00">1:00</a></p>
+                <h4>There is no promised speedup.</h4>
+                <p>A shorter TTL reduces staleness but increases database load. Benchmark your workload before deciding the trade-off is worthwhile. <a class="citation" href="#source-360" aria-label="Read the fixture passage at 6:00">6:00</a></p>
+                <p class="adaptation"><strong>A useful next step</strong> Check whether repeated reads, rather than query cost, are your bottleneck. That is a suggested investigation, not a diagnosis of your app.</p>
+              </div>
+            </section>
+            <section class="answer" id="answer-learn" aria-label="Learn example" data-sources="source-60 source-120 source-240 source-420">
+              <p class="question">“Teach me how to roll this out safely.”</p>
+              <div class="answer-body">
+                <ol class="answer-steps">
+                  <li><strong>Establish the baseline.</strong> Measure latency and errors. Confirm stale data is acceptable; exclude authorization checks. <a class="citation" href="#source-60" aria-label="Read the fixture passage at 1:00">1:00</a></li>
+                  <li><strong>Compare before committing.</strong> Shadow reads, compare cached and uncached responses, then enable five percent of traffic behind a reversible flag. <a class="citation" href="#source-120" aria-label="Read the fixture passage at 2:00">2:00</a></li>
+                  <li><strong>Know when to stop.</strong> In this lesson, an error-rate increase greater than one percentage point triggers rollback. Restore uncached reads and keep monitoring. <a class="citation" href="#source-240" aria-label="Read the fixture passage at 4:00">4:00</a></li>
+                </ol>
+                <p class="adaptation"><strong>What the lesson leaves open</strong> It specifies no vendor or SDK. The measurement interval also needs to be defined before an actual rollout. Don’t mistake an illustrative procedure for a complete implementation. <a class="citation" href="#source-420" aria-label="Read the fixture passage at 7:00">7:00</a></p>
+              </div>
+            </section>
+            <section class="answer" id="answer-apply" aria-label="Apply example" data-sources="source-60 source-180 source-240 source-300">
+              <p class="question">“Help me apply this to a multi-tenant inventory endpoint.”</p>
+              <div class="answer-body">
+                <p class="answer-premise">For stale-tolerant inventory previews, not permission checks. <a class="citation" href="#source-60" aria-label="Read the fixture passage at 1:00">1:00</a></p>
+                <ol class="answer-steps">
+                  <li><strong>Check freshness first.</strong> Thirty seconds is the lesson’s inventory example, not a universal TTL. Confirm what your endpoint permits. <a class="citation" href="#source-180" aria-label="Read the fixture passage at 3:00">3:00</a></li>
+                  <li><strong>Keep tenants apart.</strong> Include the tenant ID in the cache key. Test two tenants requesting the same resource ID. <a class="citation" href="#source-300" aria-label="Read the fixture passage at 5:00">5:00</a></li>
+                  <li><strong>Make it reversible.</strong> In this lesson, an error-rate rise greater than one percentage point triggers a return to uncached reads. <a class="citation" href="#source-240" aria-label="Read the fixture passage at 4:00">4:00</a></li>
+                </ol>
+                <p class="adaptation"><strong>Adaptation to your project</strong> Inspect the key builder and add an isolation test if it’s missing. This is a proposed investigation; no repository has been inspected.</p>
+              </div>
+            </section>
+          </div>
+        </div>
+        <footer class="review-footer"><p>An illustrative workflow, not a live AI answer. Exact quotes from a synthetic lesson; selected passages are not a full review.</p><a href="https://github.com/gvkhosla/ytmd/blob/v0.5.0/examples/README.md">Read the full examples</a></footer>
+        <p class="sr-only" id="demo-status" role="status" aria-live="polite"></p>
+      </section>
+    </section>
+
+    <section class="workflow container" aria-labelledby="workflow-title">
+      <div class="workflow-heading"><h2 id="workflow-title">The depth comes<br>from your question.</h2><p>A quick overview when that’s enough.<br>The prerequisites, examples, and exceptions when it isn’t.</p></div>
+      <ol class="workflow-steps">
+        <li><h3>Bring a video.</h3><p>Give your agent a YouTube URL. ytmd saves available captions locally, ready to read again.</p></li>
+        <li><h3>Tell it what you need.</h3><p>An explanation, a walkthrough, or help with your project. Your task sets the depth, not a fixed summary length.</p></li>
+        <li><h3>Keep the source in reach.</h3><p>Your agent reads the evidence, explains the ideas, and cites timestamps. You can check the reasoning for yourself.</p></li>
+      </ol>
     </section>
 
     <section class="setup" id="install" aria-labelledby="install-title">
       <div class="container">
-        <div class="section-heading"><h2 id="install-title">Choose how you want to start</h2><p>Use your agent, or paste the terminal commands yourself. Both install the same CLI.</p></div>
         <div class="setup-grid">
-          <div class="agent-install">
-            <h3>Ask your coding agent</h3>
-            <p>Paste this into Pi, Codex, or Claude Code.</p>
-            <div class="prompt-panel"><p id="agent-prompt">Install ytmd using https://gvkhosla.github.io/ytmd/llms.txt. Read the instructions and installer first. Check dependencies, ask before making system changes, and install the CLI and skill for my agent. Verify with ytmd doctor.</p></div>
-            <button class="button primary" type="button" data-copy="agent-prompt" data-message="Setup prompt copied. Paste it into your agent." hidden>Copy agent instructions</button>
-            <p class="small">Already installed? Give your agent a YouTube URL and a task. No extra service or account is needed.</p>
-          </div>
-          <div class="terminal-install">
-            <h3>Use your terminal</h3>
-            <p>The commands include the CLI and skills for all three agents.</p>
-            <details class="os-details" open>
-              <summary>macOS <span>With Homebrew</span></summary>
-              <div class="code-panel">
-                <div class="code-heading"><a href="https://brew.sh/">Need Homebrew?</a><button class="copy-button" type="button" data-copy="install-code" data-message="macOS install commands copied." hidden>Copy commands</button></div>
-                <pre tabindex="0" aria-label="macOS install commands"><code id="install-code">brew install python yt-dlp
+          <div class="setup-intro"><h2 id="install-title">Your next video.<br>Your existing agent.</h2><p>Paste these instructions into Pi, Codex, or Claude Code. Your agent can handle setup with your permission.</p><p class="setup-note">No extra ytmd account or model service.<br>macOS and Linux · Python + yt-dlp</p><a href="./llms.txt">Read the agent guide</a></div>
+          <div class="agent-install"><h3>Start here</h3><p id="agent-prompt">Install ytmd using https://gvkhosla.github.io/ytmd/llms.txt. Read the instructions and installer first. Check dependencies, ask before making system changes, and install the CLI and skill for my agent. Verify with ytmd doctor.</p><button class="button primary" type="button" data-copy="agent-prompt" data-message="Setup prompt copied. Paste it into Pi, Codex, or Claude Code." hidden>Copy setup prompt <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M15 8V4H4v11h4"/></svg></button><p class="install-next">Then restart your agent and give it a video URL and a task.</p></div>
+        </div>
+        <details class="setup-disclosure terminal-install"><summary>Prefer your terminal?</summary>
+          <div class="terminal-grid">
+            <section aria-labelledby="mac-title"><div class="code-heading"><h3 id="mac-title">macOS</h3><button class="copy-button" type="button" data-copy="install-code" data-message="macOS install commands copied." hidden>Copy commands</button></div><p class="prerequisite">Requires <a href="https://brew.sh/">Homebrew</a>.</p><pre tabindex="0" aria-label="macOS install commands"><code id="install-code">brew install python yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
 curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.5.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
-ytmd doctor</code></pre>
-              </div>
-            </details>
-            <details class="os-details" id="linux">
-              <summary>Linux <span>With Python + pipx</span></summary>
-              <div class="code-panel">
-                <p class="small prerequisite">First install Python 3.9+ with SQLite FTS5 and pipx using your package manager.</p>
-                <div class="code-heading"><span>Then run</span><button class="copy-button" type="button" data-copy="linux-code" data-message="Linux install commands copied." hidden>Copy commands</button></div>
-                <pre tabindex="0" aria-label="Linux install commands"><code id="linux-code">pipx install yt-dlp
+ytmd doctor</code></pre></section>
+            <section id="linux" aria-labelledby="linux-title"><div class="code-heading"><h3 id="linux-title">Linux</h3><button class="copy-button" type="button" data-copy="linux-code" data-message="Linux install commands copied." hidden>Copy commands</button></div><p class="prerequisite">First install Python 3.9+ with SQLite FTS5 and pipx.</p><pre tabindex="0" aria-label="Linux install commands"><code id="linux-code">pipx install yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
 curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.5.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
-ytmd doctor</code></pre>
-              </div>
-            </details>
-            <p class="small install-footnote">The installer checks dependencies and release checksums. Add <code>~/.local/bin</code> to your shell profile’s PATH if it isn’t there already. <a href="https://github.com/gvkhosla/ytmd#install">Install options ↗</a></p>
-          </div>
-        </div>
+ytmd doctor</code></pre></section>
+          </div><p class="install-footnote">The pinned installer checks dependencies and release checksums. It does not change your shell profile. <a href="https://github.com/gvkhosla/ytmd#install">Install options and PATH setup</a>.</p>
+        </details>
+        <details class="setup-disclosure"><summary>Already installed? Copy a task prompt.</summary><div class="task-prompt"><p id="use-prompt">Help me use this YouTube video to accomplish [my task]: [paste URL]. Use ytmd to read relevant evidence at the depth the task needs. Explain the reasoning, prerequisites, and exceptions; propose concrete next steps. Cite timestamps, separate speaker claims from your adaptations, and tell me what you actually read.</p><button class="copy-button" type="button" data-copy="use-prompt" data-message="Task prompt copied. Add your task and video URL." hidden>Copy prompt</button></div></details>
       </div>
     </section>
 
-    <section class="usage" id="use" aria-labelledby="use-title">
-      <div class="container">
-        <div class="section-heading"><h2 id="use-title">Start with what you want to do.</h2><p>After installing, restart your agent. Ask for an overview, a detailed explanation, or help applying the ideas. Replace the task and URL below.</p></div>
-        <div class="use-prompt-panel"><p id="use-prompt">Help me use this YouTube video to accomplish [my task]: [paste URL]. Use ytmd to read relevant evidence at the depth the task needs. Explain the reasoning, prerequisites, and exceptions; propose concrete next steps. Cite timestamps, separate speaker claims from your adaptations, and tell me what you actually read.</p><button class="copy-button" type="button" data-copy="use-prompt" data-message="Task prompt copied. Add your task and video URL." hidden>Copy prompt</button></div>
-        <div class="command-intro"><h3>Or run the commands directly</h3><p>These examples use a real video: Fireship’s <a href="https://www.youtube.com/watch?v=DHjqpvDnNGE">JavaScript in 100 Seconds</a>.</p></div>
-        <div class="command-list">
-          <div class="command-row"><div><h3>Save the source</h3><p>Fetch available captions once and keep them locally.</p></div><div class="command-value"><pre tabindex="0" aria-label="Save captions command"><code id="get-command">ytmd add "https://youtu.be/DHjqpvDnNGE" --json</code></pre><button class="copy-button" type="button" data-copy="get-command" data-message="Save command copied." hidden>Copy</button></div></div>
-          <div class="command-row"><div><h3>See the outline</h3><p>Metadata and chapters, without the full transcript.</p></div><div class="command-value"><pre tabindex="0" aria-label="Info command"><code id="info-command">ytmd info DHjqpvDnNGE</code></pre><button class="copy-button" type="button" data-copy="info-command" data-message="Outline command copied." hidden>Copy</button></div></div>
-          <div class="command-row"><div><h3>Gather task evidence</h3><p>Get source passages, citations, and explicit omissions—not a generated summary.</p></div><div class="command-value"><pre tabindex="0" aria-label="Evidence bundle command"><code id="search-command">ytmd context DHjqpvDnNGE --query "javascript" --max-chars 4000 --json</code></pre><button class="copy-button" type="button" data-copy="search-command" data-message="Evidence command copied." hidden>Copy</button></div></div>
-          <div class="command-row"><div><h3>Read deeper</h3><p>Follow bounded pages, or select a chapter. Continue with the returned cursor.</p></div><div class="command-value"><pre tabindex="0" aria-label="Budgeted read command"><code id="show-command">ytmd read DHjqpvDnNGE --max-chars 4000 --json</code></pre><button class="copy-button" type="button" data-copy="show-command" data-message="Budgeted read command copied." hidden>Copy</button></div></div>
-        </div>
-        <p class="small command-footnote">Character budgets apply to excerpt text, not metadata or model tokens. Your agent supplies the explanation. <a href="https://github.com/gvkhosla/ytmd#existing-commands-remain-available">All commands</a> · <a href="https://github.com/gvkhosla/ytmd/blob/v0.5.0/examples/README.md">Three complete workflows</a></p>
-      </div>
-    </section>
-
-    <section class="reference" aria-labelledby="reference-title">
-      <div class="container reference-grid">
-        <div><h2 id="reference-title">Readable by people.<br>Usable by agents.</h2><p>The setup, commands, output format, and limits are in one plain-text file. No JavaScript or page scraping required.</p><a class="reference-link" href="./llms.txt">Read llms.txt ↗</a></div>
-        <dl class="facts">
-          <div><dt>Storage</dt><dd>SQLite is the source of truth. Markdown is a generated export. Set <code>YTMD_DIR</code> to change the location.</dd></div>
-          <div><dt>Captions, not transcription</dt><dd>Videos need available captions. Captions can contain mistakes; ytmd doesn’t transcribe audio.</dd></div>
-          <div><dt>Your agent does the reasoning</dt><dd>The CLI retrieves evidence. The skill guides your existing agent to explain it, preserve qualifications, and label adaptations. <a href="https://github.com/gvkhosla/ytmd/blob/v0.5.0/evals/README.md">See what is tested</a>.</dd></div>
-          <div><dt>Network access</dt><dd>Fetching captions contacts YouTube. Saved content works offline. Browser cookies are only read if you explicitly request it.</dd></div>
-        </dl>
+    <section class="reference container" aria-labelledby="reference-title">
+      <div class="reference-heading"><h2 id="reference-title">Useful, with the<br>limits left in.</h2><a href="https://github.com/gvkhosla/ytmd/blob/v0.5.0/evals/README.md">See what is actually tested</a></div>
+      <div class="reference-content">
+        <details class="faq" open><summary>Does it work with every YouTube video?</summary><p>Videos need available captions, which can contain mistakes or omissions. ytmd doesn’t transcribe audio. An agent should tell you what it actually read, not imply a few search hits cover the whole video.</p></details>
+        <details class="faq"><summary>Who generates the answer?</summary><p>Your existing agent. ytmd retrieves captions, chapter reads, and timestamped evidence; it doesn’t run a model. The example above is authored synthetic material, not a measured model output or an interactive AI service.</p></details>
+        <details class="faq"><summary>What stays on my machine?</summary><p>ytmd saves captions to local SQLite and Markdown. Saved content works offline; fetching captions contacts YouTube. What your agent sends to its model provider depends on your agent setup. Browser cookies are only read with explicit consent.</p></details>
+        <details class="faq cli-reference"><summary>Can I use the CLI directly?</summary><p>Yes. These examples use Fireship’s <a href="https://www.youtube.com/watch?v=DHjqpvDnNGE">JavaScript in 100 Seconds</a>. Commands retrieve evidence, not an AI answer.</p>
+          <div class="command-list">
+            <div class="command-row"><h3>Save the source</h3><div class="command-value"><pre tabindex="0" aria-label="Save captions command"><code id="get-command">ytmd add "https://youtu.be/DHjqpvDnNGE" --json</code></pre><button class="copy-button" type="button" data-copy="get-command" data-message="Save command copied." hidden>Copy</button></div></div>
+            <div class="command-row"><h3>See the outline</h3><div class="command-value"><pre tabindex="0" aria-label="Outline command"><code id="info-command">ytmd info DHjqpvDnNGE</code></pre><button class="copy-button" type="button" data-copy="info-command" data-message="Outline command copied." hidden>Copy</button></div></div>
+            <div class="command-row"><h3>Gather task evidence</h3><div class="command-value"><pre tabindex="0" aria-label="Evidence bundle command"><code id="search-command">ytmd context DHjqpvDnNGE --query "javascript" --max-chars 4000 --json</code></pre><button class="copy-button" type="button" data-copy="search-command" data-message="Evidence command copied." hidden>Copy</button></div></div>
+            <div class="command-row"><h3>Read deeper</h3><div class="command-value"><pre tabindex="0" aria-label="Budgeted read command"><code id="show-command">ytmd read DHjqpvDnNGE --max-chars 4000 --json</code></pre><button class="copy-button" type="button" data-copy="show-command" data-message="Read command copied." hidden>Copy</button></div></div>
+          </div><p>Character budgets apply to excerpt text, not metadata or model tokens. <a href="https://github.com/gvkhosla/ytmd#existing-commands-remain-available">All commands</a> · <a href="./llms.txt">Plain-text agent guide</a></p>
+        </details>
       </div>
     </section>
   </main>
-  <footer class="site-footer"><div class="container footer-inner"><p>ytmd · MIT licensed · Made by <a href="https://github.com/gvkhosla">Geet Khosla</a></p><nav aria-label="Footer navigation"><a href="./llms.txt">Agent guide</a><a href="https://github.com/gvkhosla/ytmd/releases/tag/v0.5.0">v0.5.0</a><a href="https://github.com/gvkhosla/ytmd">GitHub ↗</a></nav></div></footer>
-  <noscript><p class="container small">Copy buttons need JavaScript. All instructions and commands above are available as selectable text.</p></noscript>
+  <footer class="site-footer"><div class="container footer-inner"><a class="brand" href="./" aria-label="ytmd homepage"><img src="./assets/wordmark.svg" width="104" height="32" alt="ytmd"></a><p>Open source. MIT licensed.<br>Made by <a href="https://github.com/gvkhosla">Geet Khosla</a>.</p><nav aria-label="Footer navigation"><a href="./llms.txt">Agent guide</a><a href="https://github.com/gvkhosla/ytmd/releases/tag/v0.5.0">v0.5.0</a><a href="https://github.com/gvkhosla/ytmd">GitHub</a></nav></div></footer>
+  <noscript><p class="container no-script">All examples and instructions are available as text. JavaScript adds task switching, source highlighting, and copy buttons.</p></noscript>
   <p id="copy-status" class="copy-status" role="status" aria-live="polite"></p>
 </body>
 </html>

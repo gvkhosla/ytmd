@@ -158,6 +158,48 @@ class LandingPage(unittest.TestCase):
         self.assertTrue((ROOT / "evals/README.md").exists())
         self.assertIn("https://gvkhosla.github.io/ytmd/", (SITE / "sitemap.xml").read_text())
 
+    def test_demo_quotes_match_the_public_synthetic_fixture(self):
+        fixture = json.loads((ROOT / 'evals/cases.json').read_text())
+        for cue in fixture['video']['cues']:
+            self.assertEqual(self.doc.text[f"quote-{cue['start']}"], cue['text'])
+        self.assertIn('Synthetic example', self.doc.text['use'])
+        self.assertIn('not a live AI answer', self.doc.text['use'])
+        self.assertIn('no repository has been inspected', self.doc.text['answer-apply'])
+
+    def test_demo_citations_are_available_in_each_tasks_source_scope(self):
+        for mode in ('understand', 'learn', 'apply'):
+            panel_id = 'answer-' + mode
+            attrs = self.doc.ids[panel_id][1]
+            self.assertNotIn('hidden', attrs, 'All authored answers must work without JavaScript')
+            sources = attrs['data-sources'].split()
+            self.assertTrue(sources)
+            self.assertEqual(len(sources), len(set(sources)))
+            for source in sources:
+                self.assertIn(source, self.doc.ids)
+            text = (SITE / 'index.html').read_text()
+            panel = re.search(r'<section[^>]*id="' + panel_id + r'"[^>]*>(.*?)</section>', text, re.S).group(1)
+            citations = re.findall(r'class="citation" href="#([^"]+)"', panel)
+            self.assertTrue(citations)
+            self.assertTrue(set(citations).issubset(sources))
+            tab = self.doc.ids['tab-' + mode][1]
+            self.assertEqual(tab['aria-controls'], panel_id)
+            self.assertEqual(tab['role'], 'tab')
+
+    def test_demo_precedes_installation_and_keeps_terminal_optional(self):
+        text = (SITE / 'index.html').read_text()
+        self.assertLess(text.index('id="use"'), text.index('id="install"'))
+        self.assertIn('class="setup-disclosure terminal-install"', text)
+        self.assertNotIn('<input', text, 'Do not imply this static site accepts videos')
+        script = (SITE / 'app.js').read_text()
+        self.assertNotIn('fetch(', script)
+        self.assertNotIn('.innerHTML', script)
+        for key in ('ArrowLeft', 'ArrowRight', 'Home', 'End'):
+            self.assertIn(key, script)
+
+    def test_display_font_is_self_hosted_and_licensed(self):
+        self.assertTrue((SITE / 'assets/BarlowSemiCondensed-SemiBold.ttf').exists())
+        self.assertIn('SIL OPEN FONT LICENSE', (SITE / 'assets/Barlow-OFL.txt').read_text())
+
     def test_setup_prompt_matches_readme(self):
         prompt = " ".join(self.doc.text["agent-prompt"].split())
         self.assertIn(prompt, " ".join(self.readme.split()))
