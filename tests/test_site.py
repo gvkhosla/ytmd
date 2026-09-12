@@ -80,16 +80,16 @@ class LandingPage(unittest.TestCase):
                 self.assertIn(attrs["data-copy"], self.doc.ids)
                 self.assertTrue(self.doc.text[attrs["data-copy"]].strip())
                 copies.append(attrs["data-copy"])
-        self.assertEqual(set(copies), {"install-code", "linux-code", "agent-prompt", "use-prompt", "get-command", "info-command", "search-command", "show-command"})
+        self.assertEqual(copies, ["agent-prompt"], 'Keep one primary copy action')
         self.assertEqual(self.doc.ids["copy-status"][1]["role"], "status")
         self.assertEqual(self.doc.ids["copy-status"][1]["aria-live"], "polite")
 
     def test_install_commands_match_readme_and_release(self):
-        commands = self.doc.text["install-code"].strip()
-        self.assertIn("```bash\n" + commands + "\n```", self.readme)
-        linux = self.doc.text["linux-code"].strip()
-        self.assertIn("```bash\n" + linux + "\n```", self.readme)
-        self.assertEqual(linux, commands.replace("brew install python yt-dlp", "pipx install yt-dlp"))
+        blocks = re.findall(r'```bash\n(.*?)\n```', self.readme, re.S)
+        commands = next(b for b in blocks if b.startswith('brew install'))
+        linux = next(b for b in blocks if b.startswith('pipx install'))
+        self.assertEqual(linux, commands.replace('brew install python yt-dlp', 'pipx install yt-dlp'))
+        self.assertTrue(any(a.get('href') == 'https://github.com/gvkhosla/ytmd#install' for _, a in self.doc.elements), 'Terminal setup remains one link away')
         version = re.search(r'^VERSION = "([^"]+)"', (ROOT / "ytmd").read_text(), re.M).group(1)
         self.assertIn(f"/v{version}/install.sh", commands)
         self.assertIn("--agent all", commands)
@@ -107,15 +107,14 @@ class LandingPage(unittest.TestCase):
         links = [attrs for tag, attrs in self.doc.elements if tag == "link"]
         self.assertTrue(any(a.get("rel") == "alternate" and a.get("type") == "text/plain" and a.get("href") == "./llms.txt" for a in links))
 
-    def test_every_copied_example_parses_as_a_cli_command(self):
-        cli = runpy.run_path(str(ROOT / "ytmd"), run_name="site_check")
-        for key in ("get-command", "info-command", "search-command", "show-command"):
-            command = self.doc.text[key].strip()
-            self.assertIn(command, self.readme)
+    def test_documented_workflow_commands_still_parse(self):
+        cli = runpy.run_path(str(ROOT / 'ytmd'), run_name='site_check')
+        blocks = re.findall(r'```bash\n(.*?)\n```', self.readme, re.S)
+        workflow = next(b for b in blocks if b.startswith('ytmd add'))
+        for command in workflow.splitlines():
             args = shlex.split(command)
-            self.assertEqual(args[0], "ytmd")
-            parsed = cli["parser"]().parse_args(args[1:])
-            self.assertIn(parsed.command, ("add", "info", "context", "read"))
+            self.assertEqual(args[0], 'ytmd')
+            self.assertIn(cli['parser']().parse_args(args[1:]).command, ('add', 'info', 'context', 'read'))
 
     def test_no_external_scripts_or_stylesheets(self):
         for tag, attrs in self.doc.elements:
@@ -144,11 +143,9 @@ class LandingPage(unittest.TestCase):
         self.assertIn("<noscript>", (SITE / "index.html").read_text())
 
     def test_v05_task_prompt_and_discovery_links(self):
-        prompt = " ".join(self.doc.text["use-prompt"].split())
-        self.assertIn(prompt, " ".join(self.readme.split()))
-        self.assertIn("prerequisites", prompt)
-        self.assertIn("adaptations", prompt)
         text = (SITE / "index.html").read_text()
+        self.assertIn('ytmd gives your AI agent YouTube captions.', self.doc.text['main'])
+        self.assertIn('not just a summary', self.doc.text['main'])
         structured = re.search(r'<script type="application/ld\+json">(.*?)</script>', text).group(1)
         schema = json.loads(structured)
         self.assertEqual(schema["name"], "ytmd")
@@ -160,41 +157,34 @@ class LandingPage(unittest.TestCase):
 
     def test_demo_quotes_match_the_public_synthetic_fixture(self):
         fixture = json.loads((ROOT / 'evals/cases.json').read_text())
-        for cue in fixture['video']['cues']:
+        selected = [cue for cue in fixture['video']['cues'] if f"quote-{cue['start']}" in self.doc.ids]
+        self.assertEqual(len(selected), 3)
+        for cue in selected:
             self.assertEqual(self.doc.text[f"quote-{cue['start']}"], cue['text'])
-        self.assertIn('Synthetic example', self.doc.text['use'])
-        self.assertIn('not a live AI answer', self.doc.text['use'])
-        self.assertIn('no repository has been inspected', self.doc.text['answer-apply'])
+        self.assertIn('synthetic lesson', self.doc.text['use'])
+        self.assertIn('not live AI output', self.doc.text['use'])
+        self.assertIn('not a full review', self.doc.text['use'])
 
-    def test_demo_citations_are_available_in_each_tasks_source_scope(self):
-        for mode in ('understand', 'learn', 'apply'):
-            panel_id = 'answer-' + mode
-            attrs = self.doc.ids[panel_id][1]
-            self.assertNotIn('hidden', attrs, 'All authored answers must work without JavaScript')
-            sources = attrs['data-sources'].split()
-            self.assertTrue(sources)
-            self.assertEqual(len(sources), len(set(sources)))
-            for source in sources:
-                self.assertIn(source, self.doc.ids)
-            text = (SITE / 'index.html').read_text()
-            panel = re.search(r'<section[^>]*id="' + panel_id + r'"[^>]*>(.*?)</section>', text, re.S).group(1)
-            citations = re.findall(r'class="citation" href="#([^"]+)"', panel)
-            self.assertTrue(citations)
-            self.assertTrue(set(citations).issubset(sources))
-            tab = self.doc.ids['tab-' + mode][1]
-            self.assertEqual(tab['aria-controls'], panel_id)
-            self.assertEqual(tab['role'], 'tab')
+    def test_single_example_has_three_inspectable_citations(self):
+        text = (SITE / 'index.html').read_text()
+        citations = re.findall(r'class="citation" href="#([^"]+)"', text)
+        self.assertEqual(citations, ['source-60', 'source-120', 'source-240'])
+        for source in citations:
+            self.assertIn(source, self.doc.ids)
+            self.assertNotIn('hidden', self.doc.ids[source][1])
+        self.assertEqual(self.doc.ids['sources'][0], 'details')
+        self.assertNotIn('open', self.doc.ids['sources'][1])
+        self.assertNotIn('role="tab"', text)
 
     def test_demo_precedes_installation_and_keeps_terminal_optional(self):
         text = (SITE / 'index.html').read_text()
         self.assertLess(text.index('id="use"'), text.index('id="install"'))
-        self.assertIn('class="setup-disclosure terminal-install"', text)
+        self.assertEqual(self.doc.ids['install'][0], 'details')
         self.assertNotIn('<input', text, 'Do not imply this static site accepts videos')
+        self.assertLess(len(self.doc.text['main'].split()), 500, 'Keep even expanded page copy concise')
         script = (SITE / 'app.js').read_text()
         self.assertNotIn('fetch(', script)
         self.assertNotIn('.innerHTML', script)
-        for key in ('ArrowLeft', 'ArrowRight', 'Home', 'End'):
-            self.assertIn(key, script)
 
     def test_display_font_is_self_hosted_and_licensed(self):
         self.assertTrue((SITE / 'assets/BarlowSemiCondensed-SemiBold.ttf').exists())

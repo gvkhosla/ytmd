@@ -1,75 +1,35 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-12T06:39:11Z",
   "title": "Design System: ytmd",
   "extensions": {
-    "typographyMeta": {
-      "display": {"displayName": "Condensed display", "purpose": "Large promises and section headings; self-hosted Barlow Semi Condensed."},
-      "evidence": {"displayName": "Evidence reading", "purpose": "Compact, legible source quotations; 15px on narrow screens."}
-    },
-    "shadows": [
-      {"name": "feedback", "value": "0 8px 24px rgb(0 0 0 / 15%)", "purpose": "Transient copy status."},
-      {"name": "mobile-navigation", "value": "0 8px 24px rgb(0 0 0 / 10%)", "purpose": "Floating mobile menu only."}
-    ],
-    "motion": [
-      {"name": "review-easing", "value": "cubic-bezier(.16, 1, .3, 1)", "purpose": "One readable review-panel entrance."},
-      {"name": "review-duration", "value": "280ms", "purpose": "Small vertical/clip adjustment; disabled under reduced motion."}
-    ],
-    "breakpoints": [
-      {"name": "compact-desktop", "value": "1100px"},
-      {"name": "stacked-review", "value": "800px"},
-      {"name": "mobile", "value": "639px"}
-    ]
+    "shadows": [{"name": "feedback", "value": "0 8px 24px rgb(0 0 0 / 15%)", "purpose": "Copy feedback only."}],
+    "motion": [{"name": "source-navigation", "value": "smooth", "purpose": "Native fragment scrolling; auto under reduced motion."}],
+    "breakpoints": [{"name": "mobile", "value": "600px"}]
   },
   "components": [
     {
-      "name": "Primary action",
-      "kind": "button",
-      "refersTo": "button-primary",
-      "description": "Green action with clear focus and a small control radius.",
+      "name": "Setup action", "kind": "button", "refersTo": "button-primary",
+      "description": "The only primary action on the page.",
       "html": "<button class=\"ds-primary\">Copy setup prompt</button>",
-      "css": ".ds-primary { font: 550 15px InterVariable, system-ui, sans-serif; background: var(--green); color: var(--white); min-height: 50px; padding: 12px 20px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; } .ds-primary:hover { background: var(--green-hover); } .ds-primary:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; } .ds-primary:disabled { opacity: .65; cursor: wait; }"
+      "css": ".ds-primary { font: 550 15px InterVariable, system-ui, sans-serif; color: white; background: var(--green); min-height: 50px; padding: 12px 24px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; } .ds-primary:hover { background: var(--green-hover); } .ds-primary:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; } .ds-primary:disabled { opacity: .65; cursor: wait; }"
     },
     {
-      "name": "Copy control",
-      "kind": "button",
-      "description": "Outlined secondary action for optional command blocks.",
-      "html": "<button class=\"ds-copy\">Copy commands</button>",
-      "css": ".ds-copy { font: 400 13px InterVariable, system-ui, sans-serif; color: var(--ink); background: transparent; border: 1px solid currentColor; border-radius: 4px; min-height: 40px; padding: 8px 12px; cursor: pointer; } .ds-copy:hover { background: var(--selected); color: var(--green); } .ds-copy:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; }"
+      "name": "Source citation", "kind": "custom", "refersTo": "citation",
+      "description": "A timestamp opens its source passage.",
+      "html": "<a class=\"ds-citation\" href=\"#ds-source\">1:00</a><p id=\"ds-source\">Synthetic source passage.</p>",
+      "css": ".ds-citation { display: inline-flex; align-items: center; min-height: 28px; padding: 0 6px; font: 500 13px/1.5 monospace; color: var(--green); background: var(--selected); border-radius: 3px; text-underline-offset: 3px; } .ds-citation:hover { color: white; background: var(--green); } .ds-citation:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; }"
     },
     {
-      "name": "Evidence citation",
-      "kind": "custom",
-      "refersTo": "citation",
-      "description": "Real fragment navigation to a source passage, not an ornamental timestamp.",
-      "html": "<a class=\"ds-citation\" href=\"#ds-source\">5:00</a><p id=\"ds-source\" class=\"ds-example\">Synthetic source: include the tenant ID in the cache key.</p>",
-      "css": ".ds-citation { display: inline-flex; align-items: center; min-height: 24px; padding: 0 5px; font: 500 13px monospace; color: var(--green); background: #eaf0ed; border-radius: 3px; text-underline-offset: 3px; } .ds-citation:hover { color: white; background: var(--green); } .ds-citation:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; } .ds-example { color: var(--ink); font: 14px/1.7 InterVariable, system-ui, sans-serif; }"
-    },
-    {
-      "name": "Selected source passage",
-      "kind": "custom",
-      "refersTo": "source-passage-selected",
-      "description": "Full tonal selection with a thin inset outline.",
-      "html": "<article class=\"ds-passage\" tabindex=\"0\"><strong>5:00 · Synthetic example</strong><p>Key example: tenant ID must be part of the cache key.</p></article>",
-      "css": ".ds-passage { padding: 20px 24px; background: var(--selected); box-shadow: inset 0 0 0 1px #91b3a3; color: var(--ink); font: 14px/1.7 InterVariable, system-ui, sans-serif; } .ds-passage strong { color: var(--green); font: 500 13px monospace; } .ds-passage p { margin: 8px 0 0; } .ds-passage:focus-visible { outline: 2px solid var(--green); outline-offset: -3px; }"
-    },
-    {
-      "name": "Native disclosure",
-      "kind": "custom",
-      "description": "Secondary instructions stay available without JavaScript.",
-      "html": "<details class=\"ds-disclosure\"><summary>Prefer your terminal?</summary><p>Inspect the pinned installer and follow the instructions for your platform.</p></details>",
-      "css": ".ds-disclosure { color: var(--ink); border-block: 1px solid var(--line); font: 15px/1.6 InterVariable, system-ui, sans-serif; } .ds-disclosure summary { padding: 20px 0; cursor: pointer; } .ds-disclosure summary:hover { color: var(--green); } .ds-disclosure summary:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; } .ds-disclosure p { color: var(--muted); margin: 0 0 24px; }"
+      "name": "Native disclosure", "kind": "custom",
+      "description": "Secondary text is available on demand, without JavaScript.",
+      "html": "<details class=\"ds-details\"><summary>View setup instructions</summary><p>Copy the setup prompt into your existing agent.</p></details>",
+      "css": ".ds-details { color: var(--ink); font: 15px/1.65 InterVariable, system-ui, sans-serif; } .ds-details summary { color: var(--muted); min-height: 44px; padding: 10px 0; cursor: pointer; font-size: 14px; } .ds-details summary:hover { color: var(--green); } .ds-details summary:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; }"
     }
   ],
   "narrative": {
-    "northStar": "The source review",
-    "overview": "An open, precise review surface: readable evidence, visible annotations, and an explanation that does not lose its source. The user chose this direction for the website redesign. Bold condensed headings establish the larger narrative; the review itself is deliberately quieter and denser.",
-    "keyCharacteristics": ["Large condensed headlines, restrained evidence typography.", "Open review columns and inspectable timestamp annotations.", "Cool neutrals, deep green, and a pale lime adaptation surface.", "Plain, legible controls with progressive enhancement."],
-    "rules": [
-      {"name": "The Evidence State Rule", "body": "Selected evidence uses a full tonal change and a thin inset outline, not a thick colored side stripe. Its corresponding citation also changes state.", "section": "colors"},
-      {"name": "The Flat Review Rule", "body": "Evidence gets no decorative elevation. Its selection outline communicates state, not a lifted card.", "section": "elevation"}
-    ],
-    "dos": ["Do keep source, interpretation, and adaptation visually distinguishable.", "Do preserve exact source wording and visibly label synthetic demonstrations.", "Do keep responsive visual and keyboard reading order aligned.", "Do keep instructions usable without JavaScript."],
-    "donts": ["Don't substitute a filesystem mockup for a useful example.", "Don't use false progress, fabricated testimonials, or a URL input that cannot process videos.", "Don't turn source excerpts into a grid of decorative cards.", "Don't use display typography for the dense evidence-reading role."]
+    "northStar": "The source review, distilled",
+    "overview": "The user rejected the previous site's complexity and noisy copy. Keep the established cool paper, navy text, green actions, and condensed display face; remove competing demonstrations and secondary surfaces. Show one task and its useful answer. Evidence stays inspectable without being permanently on screen.",
+    "dos": ["Do explain one concrete use case before offering more choices.", "Do keep exact source quotes and required limitations available.", "Do make the next action obvious and singular."],
+    "donts": ["Don't restore the source sidebar, mode tabs, repeated marketing sections, or inline command catalog.", "Don't remove provenance labels to achieve a smaller word count."]
   }
 }
