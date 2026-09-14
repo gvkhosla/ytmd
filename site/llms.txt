@@ -30,6 +30,8 @@ The installer verifies pinned-release checksums. No sudo or shell-profile change
 --agent all installs Pi/Codex (~/.agents/skills/ytmd) and Claude Code (~/.claude/skills/ytmd).
 Narrow with pi, codex, claude, or none. Restart the agent to discover the skill.
 
+CLI only, no skill: `pipx install git+https://github.com/gvkhosla/ytmd.git`
+
 ## Goal-aware workflow
 
 Infer what the user wants to do. If unclear, ask one focused question; don't demand a questionnaire.

@@ -66,6 +66,13 @@ release checksums, installs into `~/.local/bin`, and adds skills for Pi/Codex
 `claude`, or `none` instead of `all` to narrow installation. No sudo or shell-profile changes.
 Ask before persisting PATH changes. Restart your agent to discover the skill.
 
+**CLI only** (no agent skill — use the installer above if you want that):
+
+```bash
+pipx install git+https://github.com/gvkhosla/ytmd.git
+ytmd doctor
+```
+
 ## Try the evidence workflow
 
 These commands use Fireship's *JavaScript in 100 Seconds*. They retrieve evidence, not an AI answer:

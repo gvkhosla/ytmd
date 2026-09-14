@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Optional `pipx install git+https://github.com/gvkhosla/ytmd.git` for the CLI only. The pinned installer is still the way to install the agent skill.
+
 ## 0.6.0
 
 - `map ID`: chapter map, or deterministic 5-minute time sections when a video has no chapters, with shared preview budgets and executable read commands.

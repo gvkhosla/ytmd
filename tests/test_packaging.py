@@ -1,0 +1,22 @@
+"""Packaging metadata stays aligned with the CLI version."""
+import re
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class Packaging(unittest.TestCase):
+    def test_pyproject_version_matches_cli(self):
+        cli = (ROOT / "ytmd").read_text()
+        pyproject = (ROOT / "pyproject.toml").read_text()
+        cli_version = re.search(r'(?m)^VERSION = "([^"]+)"', cli)
+        name = re.search(r'(?m)^name = "([^"]+)"', pyproject)
+        version = re.search(r'(?m)^version = "([^"]+)"', pyproject)
+        requires = re.search(r'(?m)^requires-python = "([^"]+)"', pyproject)
+        self.assertIsNotNone(cli_version)
+        self.assertIsNotNone(name)
+        self.assertIsNotNone(version)
+        self.assertEqual(name.group(1), "ytmd")
+        self.assertEqual(version.group(1), cli_version.group(1))
+        self.assertIn("3.9", requires.group(1))
