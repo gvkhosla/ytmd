@@ -21,7 +21,7 @@ import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "0.6.0"
+VERSION = "0.7.0"
 SCHEMA = 2
 BUNDLE_SCHEMA = 1
 MAP_SCHEMA = 1

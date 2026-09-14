@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ytmd"
-version = "0.6.0"
+version = "0.7.0"
 description = "Use YouTube videos with your agent: local captions, chapter reads, and timestamped evidence."
 readme = "README.md"
 license = { text = "MIT" }

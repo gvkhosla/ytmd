@@ -1,6 +1,7 @@
 class Ytmd < Formula
   desc "Use YouTube videos with your agent: local captions and timestamped evidence"
   homepage "https://gvkhosla.github.io/ytmd/"
+  url "https://github.com/gvkhosla/ytmd.git", tag: "v0.7.0"
   license "MIT"
   head "https://github.com/gvkhosla/ytmd.git", branch: "main"
 

@@ -1,7 +1,7 @@
 # Website development
 
 Static HTML/CSS/JS in `site/`; GitHub Pages deploys from `main`. No runtime build,
-model endpoint, analytics, or third-party asset requests. CLI is v0.6.0.
+model endpoint, analytics, or third-party asset requests. CLI is v0.7.0.
 
 ## Current brief
 

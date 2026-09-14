@@ -9,7 +9,7 @@ source evidence, chapter reads, and budgeted transcript pages. The agent explain
 One Python CLI, local SQLite + Markdown, and yt-dlp. No additional model service or ytmd API key.
 Videos need available captions. This is not a standalone AI summarizer or audio transcription tool.
 
-[Website](https://gvkhosla.github.io/ytmd/) · [Examples](examples/README.md) · [Agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [v0.6.0 release](https://github.com/gvkhosla/ytmd/releases/tag/v0.6.0)
+[Website](https://gvkhosla.github.io/ytmd/) · [Examples](examples/README.md) · [Agent guide](https://gvkhosla.github.io/ytmd/llms.txt) · [v0.7.0 release](https://github.com/gvkhosla/ytmd/releases/tag/v0.7.0)
 
 ## Start with your goal
 
@@ -44,7 +44,7 @@ install the CLI and skill for my agent. Verify with ytmd doctor.
 
 ```bash
 brew tap gvkhosla/ytmd https://github.com/gvkhosla/ytmd
-brew install --HEAD ytmd
+brew install ytmd
 ytmd doctor
 ```
 
@@ -55,7 +55,7 @@ Pinned installer (CLI + skill, checksum-verified):
 ```bash
 brew install python yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.6.0/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.7.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
@@ -65,12 +65,12 @@ ytmd doctor
 ```bash
 pipx install yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
-curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.6.0/install.sh -o /tmp/install-ytmd.sh
+curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.7.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
 ```
 
-[Inspect the installer](https://github.com/gvkhosla/ytmd/blob/v0.6.0/install.sh). It verifies pinned
+[Inspect the installer](https://github.com/gvkhosla/ytmd/blob/v0.7.0/install.sh). It verifies pinned
 release checksums, installs into `~/.local/bin`, and adds skills for Pi/Codex
 (`~/.agents/skills/ytmd`) and Claude Code (`~/.claude/skills/ytmd`). Use `--agent pi`, `codex`,
 `claude`, or `none` instead of `all` to narrow installation. No sudo or shell-profile changes.
@@ -233,7 +233,7 @@ Storage: `~/ytmd/ytmd.db` and `~/ytmd/VIDEO_ID.md`, overridden with `YTMD_DIR`.
 Don't clone source into `~/ytmd`. No automatic QMD/Pickbrain integration, model service, audio download,
 or audio transcription. `ytmd add PLAYLIST --limit 10` expands a playlist or channel into individual
 videos (max 25) and then uses the existing batch saver. Saved content works offline; ingest contacts YouTube.
-v0.6 adds no database migration; schema 2 remains compatible with v0.4. Older v0.1 libraries are backed
+v0.7 adds no database migration; schema 2 remains compatible with v0.4. Older v0.1 libraries are backed
 up on migration; v0.3 libraries gain chapters in place.
 
 ## Evaluation and development

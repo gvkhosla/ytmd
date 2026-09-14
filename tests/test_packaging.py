@@ -21,8 +21,9 @@ class Packaging(unittest.TestCase):
         self.assertEqual(version.group(1), cli_version.group(1))
         self.assertIn("3.9", requires.group(1))
 
-    def test_homebrew_formula_is_head_only_and_depends_on_ytdlp(self):
+    def test_homebrew_formula_pins_the_release_tag_and_depends_on_ytdlp(self):
         formula = (ROOT / "Formula" / "ytmd.rb").read_text()
+        self.assertIn("tag: \"v0.7.0\"", formula)
         self.assertIn("head \"https://github.com/gvkhosla/ytmd.git\"", formula)
         self.assertIn("depends_on \"yt-dlp\"", formula)
         self.assertIn("bin.install_symlink", formula)
