@@ -40,17 +40,7 @@ install the CLI and skill for my agent. Verify with ytmd doctor.
 
 ### Or use your terminal
 
-**macOS** — requires [Homebrew](https://brew.sh/):
-
-```bash
-brew tap gvkhosla/ytmd https://github.com/gvkhosla/ytmd
-brew install ytmd
-ytmd doctor
-```
-
-That installs the CLI. For the agent skill, follow the formula caveats (`install.sh --source … --agent all`), or use the pinned installer below.
-
-Pinned installer (CLI + skill, checksum-verified):
+**macOS** — requires [Homebrew](https://brew.sh/). Use the checksummed installer (CLI + skill):
 
 ```bash
 brew install python yt-dlp
@@ -58,6 +48,15 @@ export PATH="$HOME/.local/bin:$PATH"
 curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.7.0/install.sh -o /tmp/install-ytmd.sh
 sh /tmp/install-ytmd.sh --agent all
 ytmd doctor
+```
+
+Homebrew formula (CLI only). Current Homebrew refuses third-party taps until you trust them; without that you get a wall of `Invalid formula` errors:
+
+```bash
+brew trust --tap gvkhosla/ytmd
+brew trust --formula gvkhosla/ytmd/ytmd
+brew tap gvkhosla/ytmd https://github.com/gvkhosla/ytmd
+brew install ytmd
 ```
 
 **Linux** — first install Python 3.9+ with SQLite FTS5 and pipx using your package manager:

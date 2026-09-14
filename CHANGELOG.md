@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Document Homebrew tap trust. `brew tap gvkhosla/ytmd` without `brew trust` fails with `Invalid formula` on current Homebrew; the checksummed installer is the supported first-success path.
+
 ## 0.7.0
 
 - Optional `pipx install git+https://github.com/gvkhosla/ytmd.git` for the CLI only. The pinned installer is still the way to install the agent skill.
