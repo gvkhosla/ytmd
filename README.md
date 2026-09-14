@@ -43,6 +43,16 @@ install the CLI and skill for my agent. Verify with ytmd doctor.
 **macOS** — requires [Homebrew](https://brew.sh/):
 
 ```bash
+brew tap gvkhosla/ytmd https://github.com/gvkhosla/ytmd
+brew install --HEAD ytmd
+ytmd doctor
+```
+
+That installs the CLI. For the agent skill, follow the formula caveats (`install.sh --source … --agent all`), or use the pinned installer below.
+
+Pinned installer (CLI + skill, checksum-verified):
+
+```bash
 brew install python yt-dlp
 export PATH="$HOME/.local/bin:$PATH"
 curl -fsSL https://raw.githubusercontent.com/gvkhosla/ytmd/v0.6.0/install.sh -o /tmp/install-ytmd.sh
@@ -71,6 +81,15 @@ Ask before persisting PATH changes. Restart your agent to discover the skill.
 ```bash
 pipx install git+https://github.com/gvkhosla/ytmd.git
 ytmd doctor
+```
+
+## Sixty seconds
+
+Paste a video URL and a real task into your agent. The agent should save the video, read a bounded chapter or evidence page, cite timestamps, and tell you what it did not read. A recording script lives in [docs/demo.md](docs/demo.md).
+
+```text
+Help me use this YouTube video to accomplish [my task]: [paste URL]. Use ytmd.
+Cite timestamps, separate speaker claims from your adaptations, and say what you actually read.
 ```
 
 ## Try the evidence workflow
@@ -141,7 +160,7 @@ for further pages. A concurrent track replacement reports `source_changed` inste
 
 | Command | Purpose |
 | --- | --- |
-| `ytmd add URL [URL ...]` / `ytmd URL` | Save captions, report each result |
+| `ytmd add URL [URL ...]` / `ytmd URL` | Save captions; playlists/channels expand with `--limit` (default 10, max 25) |
 | `ytmd info ID` | Metadata and chapter outline |
 | `ytmd read ID --chapter 2 --json` | Budgeted chapter/sequential reading |
 | `ytmd map ID --json` | Chapter or 5-minute section map with opening previews |
@@ -199,7 +218,7 @@ include `multiple_installations`, `yt_dlp_outdated` (>90 days), and `yt_dlp_vers
 - `rate_limited`: wait; do not loop or assume cookies solve it.
 - `authentication_required`: use `--cookies-from-browser BROWSER` only with explicit consent.
 - `video_unavailable`: explicit unavailability/empty extractor stub, not proof of the exact cause.
-- `captions_unavailable`: no usable track returned; not proof the video exists. No automatic transcription fallback.
+- `captions_unavailable`: no usable track returned; not proof the video exists. No automatic transcription fallback. JSON may include `next` with import and cookies follow-ups.
 - `invalid_cursor` / `stale_cursor`: start a fresh read; don't guess cursor contents or combine snapshots silently.
 - `source_changed`: the saved snapshot changed during retrieval; start again.
 - `invalid_chapter`: inspect info; use sequential reading if no chapters exist.
@@ -212,7 +231,8 @@ legacy timing is approximate. Distinguish source claims from agent interpretatio
 
 Storage: `~/ytmd/ytmd.db` and `~/ytmd/VIDEO_ID.md`, overridden with `YTMD_DIR`.
 Don't clone source into `~/ytmd`. No automatic QMD/Pickbrain integration, model service, audio download,
-playlists, or audio transcription. Saved content works offline; ingest contacts YouTube.
+or audio transcription. `ytmd add PLAYLIST --limit 10` expands a playlist or channel into individual
+videos (max 25) and then uses the existing batch saver. Saved content works offline; ingest contacts YouTube.
 v0.6 adds no database migration; schema 2 remains compatible with v0.4. Older v0.1 libraries are backed
 up on migration; v0.3 libraries gain chapters in place.
 

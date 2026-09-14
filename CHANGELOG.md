@@ -3,6 +3,10 @@
 ## Unreleased
 
 - Optional `pipx install git+https://github.com/gvkhosla/ytmd.git` for the CLI only. The pinned installer is still the way to install the agent skill.
+- macOS first-success path: `brew tap gvkhosla/ytmd https://github.com/gvkhosla/ytmd` then `brew install --HEAD ytmd`. Formula is HEAD-only until the next tagged release. Agent skill remains a separate `install.sh --agent` step.
+- 60-second demo script in `docs/demo.md`.
+- `captions_unavailable` (and the JSON error envelope) include `next` follow-ups for `import` and asking before `--cookies-from-browser`. Still no Whisper or paid transcription fallback.
+- `ytmd add PLAYLIST --limit 10` expands playlist and channel URLs into individual videos (default 10, max 25) and then uses the existing batch saver. Watch URLs with `list=` stay single-video.
 
 ## 0.6.0
 

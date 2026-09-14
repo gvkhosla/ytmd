@@ -52,9 +52,11 @@ Do not invent a replacement scraper.
 ## Retrieve before interpreting
 
 1. Save only the requested videos: `ytmd add "URL" --json`.
-   `status: existing` is success. Do not force-refetch. If the user already has caption files, use
-   `ytmd import FILE --video ID --title "Title" --json` instead of fetching. User-supplied captions
-   are not publisher provenance. Existing sources require `--force` and explicit intent.
+   `status: existing` is success. Do not force-refetch. Playlist and channel URLs expand into
+   individual videos (`--limit` default 10, max 25). Ask before raising the limit. If the user
+   already has caption files, use `ytmd import FILE --video ID --title "Title" --json` instead of
+   fetching. User-supplied captions are not publisher provenance. Existing sources require `--force`
+   and explicit intent.
 2. Orient with `ytmd map VIDEO_ID --json` (and `ytmd info VIDEO_ID --json` if you need metadata).
    Map uses publisher chapters when present; otherwise it creates labelled 5-minute time sections.
    Generated sections are not inferred topics. Previews are opening excerpts, not summaries.
@@ -124,7 +126,7 @@ fixtures as real YouTube talks. Reusable workflow examples and the evaluation ru
 
 ## Library, failures, and safety
 
-- `ytmd add URL URL... --json`: multiple inputs return an ordered stdout array even on exit 1.
+- `ytmd add URL URL... --json`: multiple inputs, playlists, and channels return an ordered stdout array even on exit 1.
   Inspect `saved`, `existing`, `error`, `skipped`. Rate limits/interruption stop the batch;
   remaining inputs are skipped. Preserve successes and never automatically retry or use `--force`.
 - `ytmd list "title or channel" --limit 20 --offset 0 --json`: literal substring filter on title/channel/ID.
@@ -137,6 +139,8 @@ fixtures as real YouTube talks. Reusable workflow examples and the evaluation ru
 - `authentication_required`: ask explicit permission before `--cookies-from-browser BROWSER`.
 - `video_unavailable`: explicit unavailability or empty extractor stub; do not infer the exact cause.
 - `captions_unavailable`: no usable track returned; not proof the video exists. No automatic Whisper/paid fallback.
+  Read `error.next` when present. Offer `ytmd import FILE --video ID --json` if the user has captions.
+  Ask before `--cookies-from-browser`. Do not invent a transcript.
 - `language_mismatch`: omit --lang or ask before replacing the saved track.
 - `stale_cursor` / `source_changed`: the local snapshot changed. Restart retrieval; do not combine versions silently.
 - `invalid_cursor`: start a fresh read; do not guess or edit cursor contents.

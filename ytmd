@@ -35,9 +35,16 @@ HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com",
 
 
 class Error(Exception):
-    def __init__(self, code, message):
-        self.code, self.message = code, message
+    def __init__(self, code, message, next_steps=None):
+        self.code, self.message, self.next_steps = code, message, next_steps
         super().__init__(message)
+
+
+def error_payload(error):
+    payload = {"code": error.code, "message": error.message}
+    if error.next_steps:
+        payload["next"] = error.next_steps
+    return payload
 
 
 def library():
@@ -50,9 +57,9 @@ def timestamp(seconds):
     return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
 
 
-def video_id(value):
+def classify_input(value):
     if ID.fullmatch(value):
-        return value
+        return ("video", value)
     try:
         u = urlparse(value)
         valid = u.scheme in ("https", "http") and u.hostname in HOSTS and not (u.username or u.password or u.port)
@@ -60,23 +67,38 @@ def video_id(value):
         valid = False
     if not valid:
         raise Error("invalid_url", "Pass a YouTube video URL or 11-character video ID.")
-    parts = u.path.strip("/").split("/")
-    if u.hostname in ("youtu.be", "www.youtu.be") and len(parts) == 1:
-        key = parts[0]
-    elif u.path == "/watch":
-        key = parse_qs(u.query).get("v", [""])[0]
-    elif len(parts) == 2 and parts[0] in ("shorts", "live", "embed"):
-        key = parts[1]
-    else:
-        key = ""
-    if not ID.fullmatch(key):
+    parts = [p for p in u.path.strip("/").split("/") if p]
+    query = parse_qs(u.query)
+    if u.hostname in ("youtu.be", "www.youtu.be") and len(parts) == 1 and ID.fullmatch(parts[0]):
+        return ("video", parts[0])
+    if u.path == "/watch" and ID.fullmatch(query.get("v", [""])[0]):
+        return ("video", query["v"][0])
+    if len(parts) == 2 and parts[0] in ("shorts", "live", "embed") and ID.fullmatch(parts[1]):
+        return ("video", parts[1])
+    if (u.path == "/playlist" and query.get("list")) or (parts and (parts[0] in ("channel", "c", "user") or parts[0].startswith("@"))):
+        return ("collection", value)
+    raise Error("invalid_url", "Pass a YouTube video, playlist, or channel URL.")
+
+
+def video_id(value):
+    kind, ident = classify_input(value)
+    if kind != "video":
         raise Error("invalid_url", "Pass a single video, not a channel or playlist.")
-    return key
+    return ident
 
 
 def url_for(key, start=None):
     url = f"https://www.youtube.com/watch?v={key}"
     return url if start is None else f"{url}&t={int(start)}s"
+
+
+def captions_next(key=None):
+    video = key if key and ID.fullmatch(key) else "VIDEO_ID"
+    target = url_for(video) if ID.fullmatch(video) else "URL"
+    return [
+        {"action": "import", "command": f'ytmd import FILE --video {video} --title "Title" --json', "ask": "If you already have VTT, JSON3, or SRT captions, import them. User-supplied captions are not publisher provenance."},
+        {"action": "cookies", "command": f"ytmd add {target} --cookies-from-browser BROWSER --json", "ask": "Ask the user before reading browser cookies. Cookies are not a guaranteed fix and are not a transcription fallback."},
+    ]
 
 
 def normalize(text):
@@ -310,12 +332,13 @@ def transcript(cues):
     return "\n\n".join(f"[{timestamp(c['start'])}] {c['text']}" for c in passages(cues))
 
 
-def run_ytdlp(args):
+def run_ytdlp(args, allow_playlist=False):
     binary = shutil.which("yt-dlp")
     if not binary:
         raise Error("missing_dependency", "Install yt-dlp: brew install yt-dlp (macOS) or pipx install yt-dlp (Linux).")
+    playlist_flag = ["--yes-playlist"] if allow_playlist else ["--no-playlist"]
     try:
-        p = subprocess.run([binary, "--ignore-config", "--no-playlist", "--skip-download", "--no-progress", "--socket-timeout", "15", "--retries", "2", "--extractor-retries", "1", "--ignore-no-formats-error", *args], capture_output=True, text=True, timeout=180)
+        p = subprocess.run([binary, "--ignore-config", *playlist_flag, "--skip-download", "--no-progress", "--socket-timeout", "15", "--retries", "2", "--extractor-retries", "1", "--ignore-no-formats-error", *args], capture_output=True, text=True, timeout=180)
     except subprocess.TimeoutExpired:
         raise Error("timeout", "YouTube request timed out. Try again later.")
     if p.returncode:
@@ -368,8 +391,58 @@ def choose_track(info, language=None):
     candidates = [c for c in candidates if c[1] == "manual" or c[0] in preferred or c[0].endswith("-orig") or c[0] == info.get("language")]
     if not candidates:
         available = ", ".join(sorted(set(manual) | {k for k in auto if k.endswith("-orig")})) or "none"
-        raise Error("captions_unavailable", f"No suitable captions{(' for ' + language) if language else ''}. Available original/manual tracks: {available}. Caption-less videos are not supported.")
+        raise Error(
+            "captions_unavailable",
+            f"No suitable captions{(' for ' + language) if language else ''}. Available original/manual tracks: {available}. Caption-less videos are not supported.",
+            next_steps=captions_next(info.get("id")),
+        )
     return sorted(candidates, key=rank)[0]
+
+
+def playlist_entries(url, limit, browser):
+    cookies = ["--cookies-from-browser", browser] if browser else []
+    raw = run_ytdlp(["--flat-playlist", "--playlist-end", str(limit), "--dump-single-json", *cookies, "--", url], allow_playlist=True)
+    try:
+        info = json.loads(raw)
+    except ValueError:
+        raise Error("invalid_collection", "YouTube returned unreadable playlist or channel metadata.")
+    if not isinstance(info, dict):
+        raise Error("invalid_collection", "YouTube returned unreadable playlist or channel metadata.")
+    if info.get("_type") not in ("playlist", "multi_video"):
+        key = info.get("id")
+        if ID.fullmatch(key or ""):
+            return [key]
+        raise Error("invalid_collection", "Pass a playlist or channel URL, or a single video.")
+    found = []
+    seen = set()
+    for entry in info.get("entries") or []:
+        if not isinstance(entry, dict):
+            continue
+        key = entry.get("id") or ""
+        if ID.fullmatch(key) and key not in seen:
+            seen.add(key)
+            found.append(key)
+        if len(found) >= limit:
+            break
+    return found
+
+
+def resolve_add_targets(urls, limit, browser):
+    targets = []
+    for url in urls:
+        try:
+            kind, ident = classify_input(url)
+            if kind == "video":
+                targets.append(("video", ident, url))
+                continue
+            items = playlist_entries(url, limit, browser)
+            if not items:
+                raise Error("empty_collection", "No videos found in that playlist or channel.")
+            for key in items:
+                targets.append(("video", key, url_for(key)))
+        except Error as error:
+            targets.append(("error", url, error))
+    return targets
 
 
 def fetch(key, language, browser):
@@ -384,7 +457,7 @@ def fetch(key, language, browser):
         run_ytdlp(["--write-subs" if source == "manual" else "--write-auto-subs", "--sub-langs", re.escape(lang), "--sub-format", "json3/vtt", "--no-simulate", "-o", str(Path(tmp) / "captions.%(ext)s"), *cookies, "--", url_for(key)])
         files = sorted(p for p in Path(tmp).iterdir() if p.suffix in (".json3", ".vtt"))
         if len(files) != 1:
-            raise Error("captions_unavailable", "Expected one caption file; none or multiple were returned. Update yt-dlp and retry.")
+            raise Error("captions_unavailable", "Expected one caption file; none or multiple were returned. Update yt-dlp and retry.", next_steps=captions_next(key))
         raw = files[0].read_text(encoding="utf-8-sig")
         fmt = files[0].suffix[1:]
         cues = parse_json3(raw) if fmt == "json3" else parse_vtt(raw)
@@ -587,11 +660,23 @@ def ensure_saved(args):
 
 def cmd_add(args):
     urls = args.urls if getattr(args, "urls", None) else [args.url]
-    batch = len(urls) > 1
+    targets = resolve_add_targets(urls, getattr(args, "limit", 10), getattr(args, "cookies_from_browser", None))
+    if len(urls) == 1 and len(targets) == 1 and targets[0][0] == "error":
+        raise targets[0][2]
+    batch = len(targets) > 1
     results = []
     stopped = None
     failed = False
-    for url in urls:
+    for target in targets:
+        if target[0] == "error":
+            url, error = target[1], target[2]
+            status = "error"
+            failed = True
+            results.append(dict(status=status, url=url, error=error_payload(error)))
+            if not args.json:
+                print(f"ytmd: {status}: {url}: {error.code}: {error.message}", file=sys.stderr)
+            continue
+        key, url = target[1], target[2]
         if stopped:
             error = Error("batch_stopped", f"Not attempted after {stopped}.")
             status = "skipped"
@@ -621,9 +706,11 @@ def cmd_add(args):
             if error.code in ("rate_limited", "interrupted"):
                 stopped = error.code
         failed = True
-        results.append(dict(status=status, url=url, error=dict(code=error.code, message=error.message)))
+        results.append(dict(status=status, url=url, error=error_payload(error)))
         if not args.json:
             print(f"ytmd: {status}: {url}: {error.code}: {error.message}", file=sys.stderr)
+            if error.next_steps:
+                print(f"ytmd: next: {error.next_steps[0]['ask']}", file=sys.stderr)
     if args.json:
         print(json.dumps(results if batch else results[0], ensure_ascii=False, indent=2))
     return 1 if failed else 0
@@ -1642,6 +1729,16 @@ def positive(value):
         raise argparse.ArgumentTypeError("limit must be an integer between 1 and 100")
 
 
+def add_limit_arg(value):
+    try:
+        number = int(value)
+        if not 1 <= number <= 25:
+            raise ValueError()
+        return number
+    except ValueError:
+        raise argparse.ArgumentTypeError("playlist/channel --limit must be an integer between 1 and 25")
+
+
 def time_arg(value):
     try:
         return seconds(value)
@@ -1713,6 +1810,7 @@ def parser():
             s.add_argument("--lang", type=language_arg, default=os.environ.get("YTMD_LANG"), help="one language; default: English then original/manual captions")
             s.add_argument("--force", action="store_true", help="replace saved captions")
             s.add_argument("--cookies-from-browser", help="explicit consent to read cookies from this browser")
+            s.add_argument("--limit", type=add_limit_arg, default=10, help="max videos from a playlist or channel (default 10, max 25)")
         elif name == "get":
             s.add_argument("url")
             s.add_argument("--lang", type=language_arg, default=os.environ.get("YTMD_LANG"), help="one language; default: English then original/manual captions")
@@ -1799,8 +1897,13 @@ def main(argv=None):
         error = Error("operation_failed", str(e))
     except KeyboardInterrupt:
         error = Error("interrupted", "Cancelled.")
-    data = {"error": {"code": error.code, "message": error.message}}
-    print(json.dumps(data, ensure_ascii=False) if "--json" in argv else f"ytmd: {error.message}", file=sys.stderr)
+    data = {"error": error_payload(error)}
+    if "--json" in argv:
+        print(json.dumps(data, ensure_ascii=False), file=sys.stderr)
+    else:
+        print(f"ytmd: {error.message}", file=sys.stderr)
+        if error.next_steps:
+            print(f"ytmd: next: {error.next_steps[0]['ask']}", file=sys.stderr)
     return 2 if error.code == "usage" else 1
 
 

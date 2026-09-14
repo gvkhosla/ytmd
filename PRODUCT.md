@@ -27,7 +27,7 @@ A visitor discovers the workflow on the static GitHub Pages site, copies setup i
 - Python 3.9+, SQLite FTS5, yt-dlp; no new framework or server required for the website.
 - Available captions required; no audio transcription or automatic fallback.
 - Agent output is not produced by the website or CLI. No extra ytmd model service or API key.
-- SQLite is canonical; Markdown is generated. Only requested videos are ingested.
+- SQLite is canonical; Markdown is generated. Only requested videos are ingested. A requested playlist or channel may expand into at most 25 videos.
 - Budgets count excerpt Unicode characters, not metadata or model tokens.
 - Preserve existing installation, documentation, release links, and no-JavaScript access to instructions.
 - Ask before dependency updates, cookie access, and persistent PATH changes.
