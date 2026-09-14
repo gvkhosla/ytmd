@@ -57,6 +57,7 @@ brew trust --tap gvkhosla/ytmd
 brew trust --formula gvkhosla/ytmd/ytmd
 brew tap gvkhosla/ytmd https://github.com/gvkhosla/ytmd
 brew install ytmd
+ytmd skill --agent all
 ```
 
 **Linux** — first install Python 3.9+ with SQLite FTS5 and pipx using your package manager:
@@ -174,6 +175,7 @@ for further pages. A concurrent track replacement reports `source_changed` inste
 | `ytmd list "title or channel" --limit 20 --offset 0` | Filter/paginate the saved library |
 | `ytmd export [directory]` | Repair generated Markdown from SQLite |
 | `ytmd rm VIDEO_ID` | Delete a saved video; exact ID required |
+| `ytmd skill --agent all` | Install the packaged Pi/Codex/Claude skill from this ytmd copy |
 | `ytmd doctor` / `path` / `--version` | Setup diagnostics, library path, version |
 | `ytmd help read` / `help context` | Per-command help |
 

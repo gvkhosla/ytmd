@@ -1667,6 +1667,66 @@ def executable_paths(name):
     return paths
 
 
+def script_version(path):
+    try:
+        text = Path(path).read_text(encoding="utf-8", errors="replace")[:8000]
+    except OSError:
+        return None
+    match = re.search(r'(?m)^VERSION = "([^"]+)"', text)
+    return match.group(1) if match else None
+
+
+def packaged_skill_path():
+    return Path(__file__).resolve().parent / "SKILL.md"
+
+
+def skill_targets(agent):
+    home = Path.home()
+    shared = home / ".agents" / "skills" / "ytmd" / "SKILL.md"
+    claude = home / ".claude" / "skills" / "ytmd" / "SKILL.md"
+    if agent in ("shared", "pi", "codex"):
+        return [shared]
+    if agent == "claude":
+        return [claude]
+    if agent == "all":
+        return [shared, claude]
+    return []
+
+
+def install_skill_file(source, destination):
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    staged = destination.with_name(".SKILL.md.new")
+    staged.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    staged.chmod(0o644)
+    staged.replace(destination)
+    return destination
+
+
+def cmd_skill(args):
+    source = packaged_skill_path()
+    if not source.is_file():
+        raise Error("missing_skill", "This ytmd install has no packaged SKILL.md. Use the checksummed installer or the Homebrew formula, then retry.")
+    destinations = skill_targets(args.agent)
+    files = []
+    for destination in destinations:
+        exists = destination.is_file()
+        matches = exists and destination.read_bytes() == source.read_bytes()
+        if not args.status and not matches:
+            install_skill_file(source, destination)
+            matches, exists = True, True
+        files.append(dict(path=str(destination), exists=exists, matches=matches))
+    if args.status or args.agent == "none":
+        status = "status"
+    else:
+        status = "installed" if destinations else "noop"
+    data = dict(status=status, version=VERSION, agent=args.agent, packaged=str(source), files=files)
+    if args.status or args.agent == "none":
+        lines = [f"packaged skill: {source}", f"ytmd {VERSION}"] + [f"{'ready' if f['matches'] else 'missing' if not f['exists'] else 'stale'}: {f['path']}" for f in files]
+    else:
+        lines = [f"Installed skill → {f['path']}" for f in files] + ["Restart your coding agent to discover the skill."]
+    output(data, args, "\n".join(lines) if lines else "No skill destinations for --agent none.")
+
+
 def ytdlp_diagnostics(binary):
     version, age = None, None
     warnings = []
@@ -1698,16 +1758,22 @@ def cmd_doctor(args):
             fts = False
     data = dict(version=VERSION, python=sys.version.split()[0], fts5=fts, yt_dlp=shutil.which("yt-dlp"), library=str(library()))
     version, age, warnings = ytdlp_diagnostics(data["yt_dlp"])
-    paths = [dict(path=p, resolved=str(Path(p).resolve())) for p in executable_paths("ytmd")]
+    paths = [dict(path=p, resolved=str(Path(p).resolve()), version=script_version(Path(p).resolve())) for p in executable_paths("ytmd")]
     if len({p["resolved"] for p in paths}) > 1:
         warnings.append(dict(code="multiple_installations", message=f"Multiple ytmd installations are on PATH. Bare 'ytmd' selects {paths[0]['path']}; compare it with executable below before updating."))
-    data.update(executable=str(Path(__file__).resolve()), ytmd_on_path=paths,
+    running = str(Path(__file__).resolve())
+    if paths and Path(paths[0]["resolved"]).resolve() != Path(running).resolve() and (paths[0].get("version") or VERSION) != VERSION:
+        warnings.append(dict(
+            code="stale_path_copy",
+            message=f"Bare 'ytmd' is {paths[0].get('version') or 'unknown'} at {paths[0]['path']}; this process is {VERSION} at {running}. Use the copy you intend, or remove the extra install.",
+        ))
+    data.update(executable=running, ytmd_on_path=paths,
                 yt_dlp_version=version, yt_dlp_age_days=age, warnings=warnings)
     # Warnings are advisory, not a network-health check or an automatic update.
     data["ok"] = bool(fts and data["yt_dlp"] and sys.version_info >= (3, 9))
     lines = [f"{k}: {v}" for k, v in data.items() if k not in ("ytmd_on_path", "warnings")]
     if paths:
-        lines += ["ytmd on PATH (in order):"] + [f"  {p['path']} -> {p['resolved']}" for p in paths]
+        lines += ["ytmd on PATH (in order):"] + [f"  {p['path']} -> {p['resolved']}" + (f" ({p['version']})" if p.get("version") else "") for p in paths]
     if warnings:
         lines += ["Warnings (advisory):"] + [f"  {w['code']}: {w['message']}" for w in warnings]
     output(data, args, "\n".join(lines))
@@ -1796,7 +1862,7 @@ def parser():
     p = Parser(description=__doc__, epilog="Save: ytmd add URL | Outline: ytmd map ID | Evidence: ytmd bundle ID ID --query WORDS | Verify: ytmd verify FILE. Library: ~/ytmd (override YTMD_DIR).")
     p.add_argument("--version", action="version", version=f"ytmd {VERSION}")
     sub = p.add_subparsers(dest="command", required=True)
-    for name, help_text, handler in [("add", "save captions for one or more videos", cmd_add), ("get", "save if needed, then print the transcript", cmd_get), ("search", "search timestamped passages", cmd_search), ("show", "read a video or time window", cmd_show), ("read", "budgeted chapter or sequential reading", cmd_read), ("context", "task-focused evidence from a saved video", cmd_context), ("map", "section map for a saved video", cmd_map), ("bundle", "multi-video evidence bundle", cmd_bundle), ("verify", "verify saved evidence and exact quotes", cmd_verify), ("import", "save local VTT, JSON3, or SRT captions", cmd_import), ("info", "metadata and chapters", cmd_info), ("list", "list saved videos", cmd_list), ("export", "rebuild markdown from SQLite", cmd_export), ("rm", "delete a saved video", cmd_rm), ("doctor", "check local dependencies", cmd_doctor), ("path", "print library location", None)]:
+    for name, help_text, handler in [("add", "save captions for one or more videos", cmd_add), ("get", "save if needed, then print the transcript", cmd_get), ("search", "search timestamped passages", cmd_search), ("show", "read a video or time window", cmd_show), ("read", "budgeted chapter or sequential reading", cmd_read), ("context", "task-focused evidence from a saved video", cmd_context), ("map", "section map for a saved video", cmd_map), ("bundle", "multi-video evidence bundle", cmd_bundle), ("verify", "verify saved evidence and exact quotes", cmd_verify), ("import", "save local VTT, JSON3, or SRT captions", cmd_import), ("info", "metadata and chapters", cmd_info), ("list", "list saved videos", cmd_list), ("export", "rebuild markdown from SQLite", cmd_export), ("rm", "delete a saved video", cmd_rm), ("skill", "install the packaged agent skill from this ytmd copy", cmd_skill), ("doctor", "check local dependencies", cmd_doctor), ("path", "print library location", None)]:
         s = sub.add_parser(name, help=help_text, description=help_text)
         formats = s.add_mutually_exclusive_group()
         formats.add_argument("--json", action="store_true", help="machine-readable output (errors too)")
@@ -1871,6 +1937,9 @@ def parser():
             s.add_argument("video")
         elif name == "export":
             s.add_argument("directory", nargs="?")
+        elif name == "skill":
+            s.add_argument("--agent", choices=("shared", "pi", "codex", "claude", "all", "none"), default="all", help="Pi/Codex share ~/.agents/skills; claude uses ~/.claude/skills; all installs both (default)")
+            s.add_argument("--status", action="store_true", help="report packaged and installed skill files without writing")
     return p
 
 

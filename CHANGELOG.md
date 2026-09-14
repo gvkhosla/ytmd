@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Document Homebrew tap trust. `brew tap gvkhosla/ytmd` without `brew trust` fails with `Invalid formula` on current Homebrew; the checksummed installer is the supported first-success path.
+- `ytmd skill --agent all`: install the packaged skill from this CLI copy (Pi/Codex and Claude). `--status` reports without writing. No PATH edits, network fetch, or extra installer script.
+- `doctor` reports each PATH copy's version and warns `stale_path_copy` when bare `ytmd` is an older script than this process.
 
 ## 0.7.0
 

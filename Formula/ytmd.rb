@@ -18,10 +18,11 @@ class Ytmd < Formula
     <<~EOS
       This installs the CLI. yt-dlp is required at runtime.
 
-      To install the Pi/Codex/Claude Code skill:
-        sh #{libexec}/install.sh --source #{libexec} --agent all
+      To install the Pi/Codex/Claude Code skill from this copy:
+        ytmd skill --agent all
 
       Restart your coding agent after installing the skill.
+      If `ytmd doctor` warns stale_path_copy, an older installer is ahead of Homebrew on PATH.
     EOS
   end
 

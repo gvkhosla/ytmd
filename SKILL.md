@@ -34,7 +34,16 @@ Do not modify a repository just because the user asked to understand a video.
 ## Setup
 
 Run `ytmd doctor --json`. If missing, explain prerequisites (Python 3.9+ with FTS5 and yt-dlp).
-Ask before installing dependencies or modifying the environment. With permission, inspect then run:
+Ask before installing dependencies or modifying the environment. If `ytmd` is already on PATH:
+
+```bash
+ytmd skill --agent all
+ytmd doctor --json
+```
+
+That copies this skill from the running CLI. If doctor reports `stale_path_copy` or
+`multiple_installations`, use that copy's `ytmd skill` or remove the extra binary; do not mix
+installer and Homebrew copies silently. With permission, a missing CLI can still be installed:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -46,8 +55,8 @@ ytmd doctor --json
 `--agent all` installs Pi/Codex and Claude Code skills; narrow with `pi`, `codex`, `claude`, or `none`.
 Restart the agent to discover the skill. Ask before persisting PATH changes.
 Doctor's `warnings` are advisory; `ok: true` checks local dependencies, not YouTube connectivity.
-Surface outdated yt-dlp or multiple installations, but never update dependencies or PATH silently.
-Do not invent a replacement scraper.
+Surface outdated yt-dlp, multiple installations, and a PATH copy older than this process, but never
+update dependencies or PATH silently. Do not invent a replacement scraper.
 
 ## Retrieve before interpreting
 

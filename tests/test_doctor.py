@@ -86,9 +86,26 @@ class Doctor(Isolated):
         self.assertEqual(code, 0)
         self.assertTrue(data["ok"])
         self.assertEqual(data["executable"], str(Path(y.__file__).resolve()))
-        self.assertEqual(data["ytmd_on_path"], [{"path": str(p), "resolved": str(p.resolve())} for p in (first, second)])
+        self.assertEqual(
+            [{k: item[k] for k in ("path", "resolved")} for item in data["ytmd_on_path"]],
+            [{"path": str(p), "resolved": str(p.resolve())} for p in (first, second)],
+        )
+        self.assertEqual([item.get("version") for item in data["ytmd_on_path"]], [None, None])
         self.assertEqual(data["warnings"][0]["code"], "multiple_installations")
         self.assertIn(str(first), data["warnings"][0]["message"])
+
+    def test_stale_path_copy_warns_when_bare_ytmd_is_an_older_script(self):
+        stale = self.root / "old-ytmd"
+        stale.write_text('#!/usr/bin/env python3\nVERSION = "0.6.0"\n')
+        running = Path(y.__file__).resolve()
+        code, data = self.doctor_data([str(stale)])
+        self.assertEqual(code, 0)
+        self.assertEqual(data["ytmd_on_path"][0]["version"], "0.6.0")
+        codes = [w["code"] for w in data["warnings"]]
+        self.assertIn("stale_path_copy", codes)
+        message = next(w["message"] for w in data["warnings"] if w["code"] == "stale_path_copy")
+        self.assertIn("0.6.0", message)
+        self.assertIn(str(running), message)
 
     def test_symlinks_to_one_installation_do_not_warn(self):
         binary = self.root / "actual"

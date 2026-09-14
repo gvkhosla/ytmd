@@ -27,8 +27,10 @@ ytmd doctor --json
 ```
 
 The installer verifies pinned-release checksums. No sudo or shell-profile changes.
+If ytmd is already installed, prefer `ytmd skill --agent all` so the skill matches this CLI.
 --agent all installs Pi/Codex (~/.agents/skills/ytmd) and Claude Code (~/.claude/skills/ytmd).
 Narrow with pi, codex, claude, or none. Restart the agent to discover the skill.
+If doctor warns stale_path_copy, bare ytmd is an older binary ahead of this process on PATH.
 
 CLI only, no skill: `pipx install git+https://github.com/gvkhosla/ytmd.git`
 
