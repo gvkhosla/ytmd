@@ -74,7 +74,18 @@ ytmd doctor
 release checksums, installs into `~/.local/bin`, and adds skills for Pi/Codex
 (`~/.agents/skills/ytmd`) and Claude Code (`~/.claude/skills/ytmd`). Use `--agent pi`, `codex`,
 `claude`, or `none` instead of `all` to narrow installation. No sudo or shell-profile changes.
-Ask before persisting PATH changes. Restart your agent to discover the skill.
+Ask before persisting PATH changes. Restart your agent to discover the skill. If the CLI is already
+installed, refresh the user-level skill directly from that copy with `ytmd skill --agent all`.
+
+To let a repository carry the skill for collaborators, install a project-local copy:
+
+```bash
+ytmd skill --project . --agent all
+```
+
+This writes `.agents/skills/ytmd/SKILL.md` for Pi/Codex and `.claude/skills/ytmd/SKILL.md` for
+Claude Code. Review and commit the files you want to share. A differing project skill is preserved
+unless you explicitly pass `--force`; collaborators still need the `ytmd` CLI and its dependencies.
 
 **CLI only** (no agent skill — use the installer above if you want that):
 
@@ -175,7 +186,8 @@ for further pages. A concurrent track replacement reports `source_changed` inste
 | `ytmd list "title or channel" --limit 20 --offset 0` | Filter/paginate the saved library |
 | `ytmd export [directory]` | Repair generated Markdown from SQLite |
 | `ytmd rm VIDEO_ID` | Delete a saved video; exact ID required |
-| `ytmd skill --agent all` | Install the packaged Pi/Codex/Claude skill from this ytmd copy |
+| `ytmd skill --agent all` | Install the packaged skill for your user |
+| `ytmd skill --project . --agent all` | Install reviewable skill files inside a repository |
 | `ytmd doctor` / `path` / `--version` | Setup diagnostics, library path, version |
 | `ytmd help read` / `help context` | Per-command help |
 

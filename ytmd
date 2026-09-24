@@ -1680,10 +1680,10 @@ def packaged_skill_path():
     return Path(__file__).resolve().parent / "SKILL.md"
 
 
-def skill_targets(agent):
-    home = Path.home()
-    shared = home / ".agents" / "skills" / "ytmd" / "SKILL.md"
-    claude = home / ".claude" / "skills" / "ytmd" / "SKILL.md"
+def skill_targets(agent, root=None):
+    root = Path.home() if root is None else root
+    shared = root / ".agents" / "skills" / "ytmd" / "SKILL.md"
+    claude = root / ".claude" / "skills" / "ytmd" / "SKILL.md"
     if agent in ("shared", "pi", "codex"):
         return [shared]
     if agent == "claude":
@@ -1706,24 +1706,45 @@ def cmd_skill(args):
     source = packaged_skill_path()
     if not source.is_file():
         raise Error("missing_skill", "This ytmd install has no packaged SKILL.md. Use the checksummed installer or the Homebrew formula, then retry.")
-    destinations = skill_targets(args.agent)
+    project = None
+    if args.project is not None:
+        candidate = Path(args.project).expanduser()
+        if not candidate.is_dir():
+            raise Error("invalid_project", f"Project directory does not exist: {candidate}")
+        project = candidate.resolve()
+    elif args.force:
+        raise Error("usage", "--force is only needed with --project; user skills update in place.")
+    destinations = skill_targets(args.agent, project)
+    if project is not None:
+        for destination in destinations:
+            try:
+                destination.resolve().relative_to(project)
+            except (OSError, RuntimeError, ValueError):
+                raise Error("unsafe_project_path", f"Project skill path resolves outside the project: {destination}")
     files = []
     for destination in destinations:
         exists = destination.is_file()
         matches = exists and destination.read_bytes() == source.read_bytes()
-        if not args.status and not matches:
-            install_skill_file(source, destination)
-            matches, exists = True, True
         files.append(dict(path=str(destination), exists=exists, matches=matches))
+    conflicts = [item["path"] for item in files if item["exists"] and not item["matches"]]
+    if project is not None and conflicts and not args.status and not args.force:
+        raise Error("skill_exists", f"Project skill differs from this ytmd copy: {conflicts[0]}. Review it, then rerun with --force to replace it.")
+    if not args.status:
+        for destination, item in zip(destinations, files):
+            if not item["matches"]:
+                install_skill_file(source, destination)
+                item.update(exists=True, matches=True)
     if args.status or args.agent == "none":
         status = "status"
     else:
         status = "installed" if destinations else "noop"
-    data = dict(status=status, version=VERSION, agent=args.agent, packaged=str(source), files=files)
+    data = dict(status=status, version=VERSION, agent=args.agent, scope="project" if project else "user",
+                project=str(project) if project else None, packaged=str(source), files=files)
     if args.status or args.agent == "none":
         lines = [f"packaged skill: {source}", f"ytmd {VERSION}"] + [f"{'ready' if f['matches'] else 'missing' if not f['exists'] else 'stale'}: {f['path']}" for f in files]
     else:
-        lines = [f"Installed skill → {f['path']}" for f in files] + ["Restart your coding agent to discover the skill."]
+        lines = [f"Installed skill → {f['path']}" for f in files]
+        lines += ["Commit the project skill file to share it with collaborators."] if project else ["Restart your coding agent to discover the skill."]
     output(data, args, "\n".join(lines) if lines else "No skill destinations for --agent none.")
 
 
@@ -1938,7 +1959,9 @@ def parser():
         elif name == "export":
             s.add_argument("directory", nargs="?")
         elif name == "skill":
-            s.add_argument("--agent", choices=("shared", "pi", "codex", "claude", "all", "none"), default="all", help="Pi/Codex share ~/.agents/skills; claude uses ~/.claude/skills; all installs both (default)")
+            s.add_argument("--agent", choices=("shared", "pi", "codex", "claude", "all", "none"), default="all", help="Pi/Codex share .agents/skills; claude uses .claude/skills; all installs both (default)")
+            s.add_argument("--project", metavar="DIRECTORY", help="install inside an existing project instead of your home directory")
+            s.add_argument("--force", action="store_true", help="replace a differing project skill after review")
             s.add_argument("--status", action="store_true", help="report packaged and installed skill files without writing")
     return p
 

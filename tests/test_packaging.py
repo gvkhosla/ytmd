@@ -1,4 +1,5 @@
 """Packaging metadata stays aligned with the CLI version."""
+import hashlib
 import re
 import unittest
 from pathlib import Path
@@ -27,3 +28,9 @@ class Packaging(unittest.TestCase):
         self.assertIn("head \"https://github.com/gvkhosla/ytmd.git\"", formula)
         self.assertIn("depends_on \"yt-dlp\"", formula)
         self.assertIn("bin.install_symlink", formula)
+
+    def test_release_checksums_match_payloads(self):
+        for line in (ROOT / "SHA256SUMS").read_text().splitlines():
+            expected, name = line.split()
+            actual = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
+            self.assertEqual(actual, expected, name)

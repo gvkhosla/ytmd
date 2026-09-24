@@ -41,9 +41,12 @@ ytmd skill --agent all
 ytmd doctor --json
 ```
 
-That copies this skill from the running CLI. If doctor reports `stale_path_copy` or
-`multiple_installations`, use that copy's `ytmd skill` or remove the extra binary; do not mix
-installer and Homebrew copies silently. With permission, a missing CLI can still be installed:
+That copies this skill from the running CLI. When the user explicitly wants the repository to
+carry the skill for collaborators, use `ytmd skill --project . --agent all`; review the generated
+files before committing them. Differing project skills require `--force` after review. If doctor
+reports `stale_path_copy` or `multiple_installations`, use that copy's `ytmd skill` or remove the
+extra binary; do not mix installer and Homebrew copies silently. With permission, a missing CLI
+can still be installed:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
