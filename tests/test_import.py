@@ -48,6 +48,37 @@ class ImportCaptions(VideoMap):
         self.assertEqual(self.data("read", KEY)["title"], "Replaced")
         self.assertEqual(self.data("read", KEY)["captions"], "user_supplied")
 
+    def test_malformed_timing_has_caption_error_and_preserves_existing_source(self):
+        self.save(KEY)
+        cases = []
+        for field in ("tStartMs", "dDurationMs"):
+            for value in (None, {}, [], "not a number", True, False, "1" * 400, 10 ** 400, -1, float("nan"), float("inf")):
+                event = {"tStartMs": 0, "dDurationMs": 1000, "segs": [{"utf8": "Replacement"}]}
+                event[field] = value
+                cases.append(("json3", json.dumps({"events": [event]})))
+        cases.append(("vtt", "WEBVTT\n\n00:99:00.000 --> 01:00:00.000\nReplacement\n"))
+        for number, (extension, raw) in enumerate(cases):
+            with self.subTest(raw=raw):
+                path = self.root / f"bad-{number}.{extension}"
+                path.write_text(raw)
+                code, out, err = self.call("import", str(path), "--video", KEY, "--force")
+                self.assertEqual(code, 1)
+                self.assertEqual(out, "")
+                self.assertEqual(json.loads(err)["error"]["code"], "invalid_captions")
+                self.assertEqual(self.data("read", KEY)["title"], "A tutorial")
+
+    def test_duration_cannot_truncate_caption_timeline(self):
+        self.save(KEY)
+        path = self.root / "captions.vtt"
+        path.write_text("WEBVTT\n\n00:00:10.000 --> 00:00:11.500\nReplacement\n")
+        code, out, err = self.call("import", str(path), "--video", KEY, "--duration", "10", "--force")
+        self.assertEqual(code, 1)
+        self.assertEqual(json.loads(err)["error"]["code"], "invalid_captions")
+        self.assertEqual(self.data("read", KEY)["title"], "A tutorial")
+        result = self.data("import", str(path), "--video", KEY, "--duration", "11.5", "--force")
+        self.assertEqual(result["duration_s"], 12)
+        self.assertFalse(result["duration_derived"])
+
     def test_import_does_not_call_ytdlp(self):
         path = self.root / "captions.vtt"
         path.write_text("WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nHello\n")

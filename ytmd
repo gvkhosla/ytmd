@@ -123,8 +123,17 @@ def parse_json3(raw):
         text = normalize("".join(s.get("utf8", "") for s in segs))
         if not text:
             continue
-        start = float(event.get("tStartMs", 0)) / 1000
-        end = start + float(event.get("dDurationMs", 0)) / 1000
+        timing = [event.get("tStartMs", 0), event.get("dDurationMs", 0)]
+        try:
+            if any(isinstance(value, bool) for value in timing):
+                raise ValueError("Boolean timestamp")
+            start_ms, duration_ms = (float(value) for value in timing)
+        except (TypeError, ValueError, OverflowError):
+            raise Error("invalid_captions", "Malformed JSON3 timestamp.")
+        if not all(math.isfinite(value) and value >= 0 for value in (start_ms, duration_ms)):
+            raise Error("invalid_captions", "Invalid JSON3 caption timing.")
+        start = start_ms / 1000
+        end = start + duration_ms / 1000
         cues.append({"start": start, "end": end, "text": text})
     return validate_cues(cues)
 
@@ -159,7 +168,10 @@ def parse_vtt(raw):
         match = re.match(r"(" + VTT_TIME + r")\s+-->\s+(" + VTT_TIME + r")", lines[timing])
         if not match:
             raise Error("invalid_captions", "Malformed VTT timestamp.")
-        start, end = (seconds(v) for v in match.groups())
+        try:
+            start, end = (seconds(v) for v in match.groups())
+        except ValueError:
+            raise Error("invalid_captions", "Malformed VTT timestamp.")
         payload = lines[timing + 1:]
         # Only de-roll cues with explicit YouTube rolling-caption evidence.
         rolling = "position:" in lines[timing] and any(re.search(r"<" + VTT_TIME + r">", line) for line in payload)
@@ -1591,7 +1603,7 @@ def cmd_list(args):
 
 def cmd_export(args):
     with closing(connect()) as conn:
-        rows = [dict(r) for r in conn.execute("SELECT * FROM videos")]
+        rows = [resolve(conn, args.video)] if args.video else [dict(r) for r in conn.execute("SELECT * FROM videos")]
     files = [write_markdown(row, args.directory) for row in rows]
     output(dict(files=files), args, f"Exported {len(files)} markdown files.")
 
@@ -1642,7 +1654,10 @@ def cmd_import(args):
     if existing and not args.force:
         raise Error("already_saved", "A saved track already exists for this ID. Use --force to replace it.")
     derived = args.duration is None
-    duration = int(args.duration) if args.duration is not None else int(math.ceil(max(c["end"] for c in cues)))
+    caption_end = max(c["end"] for c in cues)
+    if args.duration is not None and args.duration < caption_end:
+        raise Error("invalid_captions", "Duration cannot end before the last caption.")
+    duration = int(math.ceil(caption_end if derived else args.duration))
     row = dict(id=key, title=args.title or key, channel=args.channel or "", url=url_for(key), uploaded_at="",
                duration_s=duration, description="",
                captions="user_supplied", lang=args.lang, ingested_at=datetime.now(timezone.utc).isoformat(),
@@ -1958,6 +1973,7 @@ def parser():
             s.add_argument("video")
         elif name == "export":
             s.add_argument("directory", nargs="?")
+            s.add_argument("--video", help="export only this saved video ID, URL, or unambiguous title")
         elif name == "skill":
             s.add_argument("--agent", choices=("shared", "pi", "codex", "claude", "all", "none"), default="all", help="Pi/Codex share .agents/skills; claude uses .claude/skills; all installs both (default)")
             s.add_argument("--project", metavar="DIRECTORY", help="install inside an existing project instead of your home directory")

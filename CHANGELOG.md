@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `export [directory] --video ID`: export or repair just one saved video's Markdown. URLs and unambiguous titles work too; without the filter, whole-library export is unchanged.
+- Malformed JSON3/VTT timestamps consistently report `invalid_captions`. Reject boolean timestamps and durations shorter than the caption timeline before replacing a saved track; round fractional durations up instead of truncating them.
+
 - Document Homebrew tap trust. `brew tap gvkhosla/ytmd` without `brew trust` fails with `Invalid formula` on current Homebrew; the checksummed installer is the supported first-success path.
 - `ytmd skill --agent all`: install the packaged skill from this CLI copy (Pi/Codex and Claude). `--status` reports without writing. No PATH edits, network fetch, or extra installer script.
 - `ytmd skill --project DIRECTORY`: place reviewable skill files inside a repository so collaborators' agents can discover them. Existing differing files are preserved unless `--force` is explicit.
