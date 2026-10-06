@@ -240,6 +240,21 @@ class LandingPage(unittest.TestCase):
         self.assertIn('SIL OPEN FONT LICENSE', (SITE / 'assets/Barlow-OFL.txt').read_text())
         self.assertTrue((SITE / 'assets/wordmark-dark.svg').exists())
 
+    def test_first_use_prompt_is_concrete_and_progressively_disclosed(self):
+        tag, attrs = self.doc.ids["first-use"]
+        self.assertEqual(tag, "details")
+        self.assertNotIn("open", attrs)
+        self.assertNotIn("hidden", attrs)
+        self.assertTrue(any(a.get("href") == "#first-use" for _, a in self.doc.elements))
+        prompt = self.doc.text["first-prompt"]
+        first_video = self.videos[0]
+        self.assertIn("https://www.youtube.com/watch?v=" + first_video["id"], prompt)
+        for phrase in ("simplify my agent architecture", "Use ytmd", "one change to test",
+                       "Cite timestamps", "separate speaker claims", "what you actually read"):
+            self.assertIn(phrase, prompt)
+        self.assertIn("restart your agent", self.doc.text["first-use"])
+        self.assertIn("what was read", self.doc.text["first-use"])
+
     def test_setup_prompt_matches_readme(self):
         prompt = " ".join(self.doc.text["agent-prompt"].split())
         self.assertIn(prompt, " ".join(self.readme.split()))

@@ -55,6 +55,22 @@ async function checkContrast(page) {
         assert.ok((await page.locator('.thumbnail').first().boundingBox()).y < height, 'First thumbnail should appear in the initial viewport');
         await page.screenshot({path:root+'/.impeccable/review/'+name+'.png',fullPage:true});
       }
+      // The secondary hero link opens a concrete request, not another copy action.
+      await page.locator('.pitch a[href="#first-use"]').click();
+      await page.waitForFunction(()=>document.getElementById('first-use').open);
+      assert.equal(await page.locator('#first-use').evaluate(el=>el.open),true);
+      assert.equal(await page.locator('#first-prompt').isVisible(),true);
+      assert.match(await page.locator('#first-prompt').innerText(),/D7_ipDqhtwk/);
+      assert.match(await page.locator('#first-prompt').innerText(),/Cite timestamps/);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      if (name==='desktop'||name==='mobile') await page.screenshot({path:root+'/.impeccable/review/'+name+'-first-use.png',fullPage:true});
+      await page.locator('#first-use summary').focus(); await page.keyboard.press('Space');
+      assert.equal(await page.locator('#first-use').evaluate(el=>el.open),false);
+      // Reopening must also work when the URL already has the first-use hash.
+      await page.locator('.pitch a[href="#first-use"]').click();
+      await page.waitForFunction(()=>document.getElementById('first-use').open);
+      await page.locator('#first-use summary').click();
+      await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
       await page.locator('#theme-toggle').focus(); await page.keyboard.press('Enter');
       assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
       assert.equal(await page.locator('#theme-toggle').getAttribute('aria-label'),'Switch to light mode');
@@ -115,6 +131,10 @@ async function checkContrast(page) {
     assert.equal(await plain.locator('body').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(10, 10, 10)');
     await plain.locator('#install summary').click();
     assert.equal(await plain.locator('#agent-prompt').isVisible(),true);
+    await plain.locator('.pitch a[href="#first-use"]').click();
+    await plain.locator('#first-use summary').click();
+    assert.equal(await plain.locator('#first-prompt').isVisible(),true);
+    assert.match(await plain.locator('#first-prompt').innerText(),/Cite timestamps/);
     for (const video of videos) {
       await plain.locator('#plan-'+video.id+' summary').click();
       assert.equal(await plain.locator('#evidence-'+video.id).isVisible(),true);

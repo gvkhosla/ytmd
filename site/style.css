@@ -83,6 +83,7 @@ h3 { font-size: 1.125rem; }
 .button:hover { background: var(--green-hover); }
 .button:focus-visible { outline-color: var(--green); }
 .compatibility { color: var(--muted); font-size: 1rem; }
+.pitch > a { display: inline-flex; align-items: center; min-height: 44px; }
 .video-group { margin-top: 48px; }
 .video-group > h2 { margin-bottom: 20px; }
 .video-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; align-items: start; }
@@ -122,8 +123,8 @@ blockquote { font-size: 1rem; margin-top: 14px; color: var(--muted); }
 .pipeline dd { margin-top: 8px; color: var(--muted); font-size: 1rem; max-width: 36ch; }
 .local-note { margin-top: 20px; font-size: 1rem; color: var(--muted); }
 .setup { margin-top: 12px; padding-top: 12px; }
-#install > p { margin-block: 12px; font-size: 1rem; max-width: 65ch; }
-#agent-prompt { padding: 20px; background: var(--selected); border-radius: 4px; overflow-wrap: anywhere; }
+.setup details > p { margin-block: 12px; font-size: 1rem; max-width: 65ch; }
+#agent-prompt, #first-prompt { padding: 20px; background: var(--selected); border-radius: 4px; overflow-wrap: anywhere; }
 #install > a { display: inline-flex; align-items: center; min-height: 44px; font-size: 1rem; }
 .requirements { margin-top: 10px; color: var(--muted); font-size: 1rem; }
 .site-footer { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-block: 24px; margin-top: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 1rem; font-weight: 400; }

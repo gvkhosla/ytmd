@@ -26,8 +26,8 @@
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
   <link rel="preload" href="./assets/BarlowSemiCondensed-SemiBold.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="./assets/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./style.css?v=0.5.0-clarity1">
-  <script src="./app.js?v=0.5.0-clarity1" defer></script>
+  <link rel="stylesheet" href="./style.css?v=0.7.0-first-use1">
+  <script src="./app.js?v=0.7.0-first-use1" defer></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"ytmd","url":"https://gvkhosla.github.io/ytmd/","description":"Local captions, chapter reads, and timestamped evidence for understanding and applying YouTube videos with an existing agent.","applicationCategory":"DeveloperApplication","operatingSystem":"macOS, Linux","softwareVersion":"0.7.0","license":"https://github.com/gvkhosla/ytmd/blob/v0.7.0/LICENSE","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
 </head>
 <body>
@@ -51,6 +51,7 @@
         <p>Give your agent a video and a task. Get a plan with timestamps, not a summary.</p>
         <button class="button" type="button" data-copy="agent-prompt" hidden>Copy setup prompt</button>
         <p class="compatibility">For Pi, Codex, and Claude Code.</p>
+        <a href="#first-use">Already set up? Try your first video</a>
         <noscript><a href="#install">Set up ytmd</a></noscript>
       </div>
     </section>
@@ -234,6 +235,12 @@
         <p id="agent-prompt">Install ytmd using https://gvkhosla.github.io/ytmd/llms.txt. Read the instructions and installer first. Check dependencies, ask before making system changes, and install the CLI and skill for my agent. Verify with ytmd doctor.</p>
         <p>Then restart your agent and give it a video URL and a task.</p>
         <a href="https://github.com/gvkhosla/ytmd#install">Prefer the terminal?</a>
+      </details>
+      <details id="first-use">
+        <summary>Try your first video</summary>
+        <p>After setup, restart your agent. Paste this request, or replace the video and task with your own:</p>
+        <p id="first-prompt">Help me simplify my agent architecture using this video: https://www.youtube.com/watch?v=D7_ipDqhtwk. Use ytmd to read relevant evidence. Explain the trade-offs and suggest one change to test. Cite timestamps, separate speaker claims from your adaptations, and say what you actually read.</p>
+        <p>Look for a proposed change, checkable timestamps, and an explanation of what was read—not a claim to have reviewed the whole talk.</p>
       </details>
       <p class="requirements">Free and open source. Videos need available captions.</p>
     </section>

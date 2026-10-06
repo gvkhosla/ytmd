@@ -15,6 +15,14 @@ function revealFragment() {
 }
 revealFragment();
 window.addEventListener('hashchange', revealFragment);
+// A repeated click may keep the same hash after the disclosure was closed.
+for (const link of document.querySelectorAll('a[href="#first-use"]')) {
+  link.addEventListener('click', () => {
+    if (location.hash !== '#first-use') return;
+    const target = document.getElementById('first-use');
+    if (target) reveal(target);
+  });
+}
 
 const status = document.getElementById('copy-status');
 let timer;
