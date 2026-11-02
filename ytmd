@@ -20,6 +20,8 @@ import subprocess
 import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
+from urllib.request import Request, urlopen
+from urllib.error import URLError
 
 VERSION = "0.7.0"
 SCHEMA = 2
@@ -1567,6 +1569,132 @@ def cmd_verify(args):
     return 0 if ok else 1
 
 
+HACKERTUBE_URL = "https://hackertube.org/download/videos.jsonl"
+HACKERTUBE_ATTRIBUTION = {
+    "source": "https://hackertube.org",
+    "archive": "https://huggingface.co/datasets/open-index/hacker-news",
+    "license": "https://opendatacommons.org/licenses/by/1-0/",
+}
+MAX_CATALOG_BYTES = 32000000
+
+
+def discovery_tables(conn):
+    # Additive, optional tables: no changes to transcript storage or its schema version.
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS discovery_catalog (
+            source TEXT PRIMARY KEY, fetched_at TEXT NOT NULL, records TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS digests (
+            path TEXT PRIMARY KEY, sha256 TEXT NOT NULL, recorded_at TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS digest_videos (
+            path TEXT NOT NULL REFERENCES digests(path), video_id TEXT NOT NULL,
+            PRIMARY KEY(path, video_id));
+    """)
+
+
+def fetch_hackertube():
+    try:
+        request = Request(HACKERTUBE_URL, headers={"User-Agent": f"ytmd/{VERSION}"})
+        with urlopen(request, timeout=30) as response:
+            raw = response.read(MAX_CATALOG_BYTES + 1)
+    except (OSError, URLError) as exc:
+        raise Error("discovery_unavailable", f"Could not fetch HackerTube: {exc}. Retry later; cached data is preserved.")
+    return parse_hackertube(raw)
+
+
+def parse_hackertube(raw):
+    if len(raw) > MAX_CATALOG_BYTES:
+        raise Error("invalid_catalog", "HackerTube export exceeds the 32 MB limit.")
+    records, ids = [], set()
+    try:
+        for line in raw.decode("utf-8").splitlines():
+            if not line.strip():
+                continue
+            item = json.loads(line)
+            key, score, hn = item["vid"], item["score"], item["hn"]
+            if not isinstance(key, str) or not ID.fullmatch(key) or key in ids:
+                raise ValueError("invalid or duplicate video ID")
+            if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score) or score < 0:
+                raise ValueError("invalid score")
+            recs = hn["recommenders"]
+            if type(recs) is not int or recs < 0:
+                raise ValueError("invalid recommender count")
+            for field in ("title", "channel", "summary", "why_hn", "primary_topic", "shelf_life"):
+                if not isinstance(item.get(field), str):
+                    raise ValueError(f"invalid {field}")
+            ids.add(key)
+            # Whitelist fields; construct links ourselves rather than trusting remote URLs.
+            records.append(dict(id=key, url=url_for(key), title=item["title"], channel=item["channel"],
+                                overview=item["summary"], why_hn=item["why_hn"],
+                                topic=item["primary_topic"], shelf_life=item["shelf_life"],
+                                score=score, recommenders=recs,
+                                hackertube_url=f"https://hackertube.org/watch/{key}"))
+        if not records:
+            raise ValueError("empty export")
+    except (ValueError, TypeError, KeyError, UnicodeError) as exc:
+        raise Error("invalid_catalog", f"Invalid HackerTube export: {exc}")
+    return records
+
+
+def cmd_discover(args):
+    with closing(connect()) as conn:
+        discovery_tables(conn)
+        cached = conn.execute("SELECT * FROM discovery_catalog WHERE source='hackertube'").fetchone()
+        if args.refresh or cached is None:
+            records = fetch_hackertube()
+            fetched_at = datetime.now(timezone.utc).isoformat()
+            with conn:
+                conn.execute("INSERT OR REPLACE INTO discovery_catalog VALUES (?, ?, ?)",
+                             ("hackertube", fetched_at, json.dumps(records)))
+        else:
+            records, fetched_at = json.loads(cached["records"]), cached["fetched_at"]
+        delivered = {r[0] for r in conn.execute("SELECT DISTINCT video_id FROM digest_videos")}
+        records = [r for r in records if r["recommenders"] > 0 and r["shelf_life"] != "news"
+                   and (not args.unseen or r["id"] not in delivered)
+                   and (not args.topic or args.topic.casefold() in r["topic"].casefold())]
+        records.sort(key=lambda r: (-r["score"], r["id"]))
+        picks = records[:args.limit]
+        data = dict(source="hackertube", fetched_at=fetched_at, ranking="HackerTube score descending; ties by video ID",
+                    overview_basis="HackerTube AI-generated metadata, not a transcript summary",
+                    attribution=HACKERTUBE_ATTRIBUTION, eligible=len(records), videos=picks)
+        lines = [f"{r['title']} — {r['url']}\n  {r['overview']}" for r in picks]
+        text = "\n\n".join(lines) or "No matching videos."
+        text += f"\n\nCatalog: {fetched_at}. Source: HackerTube + open-index/hacker-news (ODC-By 1.0)."
+        output(data, args, text)
+
+
+def cmd_digest(args):
+    path = Path(args.file).expanduser().resolve()
+    if path.suffix.lower() != ".md" or not path.is_file():
+        raise Error("invalid_digest", "Supply an existing Markdown (.md) digest file.")
+    with path.open("rb") as stream:
+        raw = stream.read(MAX_JSON_BYTES + 1)
+    if not raw.strip() or len(raw) > MAX_JSON_BYTES:
+        raise Error("invalid_digest", "Digest must be nonempty and at most 5 MB.")
+    try:
+        raw.decode("utf-8")
+    except UnicodeError:
+        raise Error("invalid_digest", "Digest must be UTF-8 Markdown.")
+    keys = sorted({video_id(value) for value in args.videos})
+    digest_hash = hashlib.sha256(raw).hexdigest()
+    with closing(connect()) as conn:
+        discovery_tables(conn)
+        with conn:
+            conn.execute("BEGIN IMMEDIATE")
+            existing = conn.execute("SELECT sha256 FROM digests WHERE path=?", (str(path),)).fetchone()
+            old_keys = sorted(r[0] for r in conn.execute("SELECT video_id FROM digest_videos WHERE path=?", (str(path),)))
+            if existing:
+                if existing[0] != digest_hash or old_keys != keys:
+                    raise Error("digest_conflict", "This path already records a different digest. Use a new filename.")
+                status = "existing"
+            else:
+                conn.execute("INSERT INTO digests VALUES (?, ?, ?)",
+                             (str(path), digest_hash, datetime.now(timezone.utc).isoformat()))
+                conn.executemany("INSERT INTO digest_videos VALUES (?, ?)", [(str(path), key) for key in keys])
+                status = "recorded"
+    output(dict(status=status, file=str(path), sha256=digest_hash, videos=keys), args,
+           f"Digest {status}: {path} ({len(keys)} videos).")
+
+
 def cmd_show(args):
     check_range(args)
     with closing(connect()) as conn:
@@ -1898,7 +2026,7 @@ def parser():
     p = Parser(description=__doc__, epilog="Save: ytmd add URL | Outline: ytmd map ID | Evidence: ytmd bundle ID ID --query WORDS | Verify: ytmd verify FILE. Library: ~/ytmd (override YTMD_DIR).")
     p.add_argument("--version", action="version", version=f"ytmd {VERSION}")
     sub = p.add_subparsers(dest="command", required=True)
-    for name, help_text, handler in [("add", "save captions for one or more videos", cmd_add), ("get", "save if needed, then print the transcript", cmd_get), ("search", "search timestamped passages", cmd_search), ("show", "read a video or time window", cmd_show), ("read", "budgeted chapter or sequential reading", cmd_read), ("context", "task-focused evidence from a saved video", cmd_context), ("map", "section map for a saved video", cmd_map), ("bundle", "multi-video evidence bundle", cmd_bundle), ("verify", "verify saved evidence and exact quotes", cmd_verify), ("import", "save local VTT, JSON3, or SRT captions", cmd_import), ("info", "metadata and chapters", cmd_info), ("list", "list saved videos", cmd_list), ("export", "rebuild markdown from SQLite", cmd_export), ("rm", "delete a saved video", cmd_rm), ("skill", "install the packaged agent skill from this ytmd copy", cmd_skill), ("doctor", "check local dependencies", cmd_doctor), ("path", "print library location", None)]:
+    for name, help_text, handler in [("discover", "find ranked HackerTube videos (metadata only)", cmd_discover), ("digest", "record a finished Markdown digest and its included videos", cmd_digest), ("add", "save captions for one or more videos", cmd_add), ("get", "save if needed, then print the transcript", cmd_get), ("search", "search timestamped passages", cmd_search), ("show", "read a video or time window", cmd_show), ("read", "budgeted chapter or sequential reading", cmd_read), ("context", "task-focused evidence from a saved video", cmd_context), ("map", "section map for a saved video", cmd_map), ("bundle", "multi-video evidence bundle", cmd_bundle), ("verify", "verify saved evidence and exact quotes", cmd_verify), ("import", "save local VTT, JSON3, or SRT captions", cmd_import), ("info", "metadata and chapters", cmd_info), ("list", "list saved videos", cmd_list), ("export", "rebuild markdown from SQLite", cmd_export), ("rm", "delete a saved video", cmd_rm), ("skill", "install the packaged agent skill from this ytmd copy", cmd_skill), ("doctor", "check local dependencies", cmd_doctor), ("path", "print library location", None)]:
         s = sub.add_parser(name, help=help_text, description=help_text)
         formats = s.add_mutually_exclusive_group()
         formats.add_argument("--json", action="store_true", help="machine-readable output (errors too)")
@@ -1907,7 +2035,16 @@ def parser():
             s.add_argument("--from", dest="start", type=time_arg, default=0.0)
             s.add_argument("--to", type=time_arg)
         s.set_defaults(handler=handler)
-        if name == "add":
+        if name == "discover":
+            s.add_argument("--source", choices=("hackertube",), default="hackertube")
+            s.add_argument("--limit", type=add_limit_arg, default=10, help="number of picks (default 10, max 25)")
+            s.add_argument("--unseen", action="store_true", help="exclude videos recorded in a digest, not saved transcripts")
+            s.add_argument("--topic", help="literal substring of HackerTube's primary topic")
+            s.add_argument("--refresh", action="store_true", help="explicitly refresh the cached catalog")
+        elif name == "digest":
+            s.add_argument("file", help="existing agent-written Markdown file; never modified by this command")
+            s.add_argument("--videos", nargs="+", required=True, help="IDs or URLs actually included in this digest")
+        elif name == "add":
             s.add_argument("urls", nargs="+", metavar="url")
             s.add_argument("--lang", type=language_arg, default=os.environ.get("YTMD_LANG"), help="one language; default: English then original/manual captions")
             s.add_argument("--force", action="store_true", help="replace saved captions")

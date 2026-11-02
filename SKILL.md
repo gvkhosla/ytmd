@@ -1,6 +1,6 @@
 ---
 name: ytmd
-description: Help users understand, learn from, and apply YouTube videos at the depth their task needs. Retrieve local captions, chapter reads, and timestamped evidence; use when a user shares a YouTube video, asks for insights or a transcript, or wants to apply video ideas to a project.
+description: Help users understand, learn from, and apply YouTube videos at the depth their task needs. Retrieve local captions, chapter reads, and timestamped evidence; use when a user shares a YouTube video, asks for insights or a transcript, wants to apply video ideas to a project, or requests HackerTube discovery or a daily video digest.
 license: MIT
 compatibility: Python 3.9+ with SQLite FTS5, yt-dlp, and ytmd on PATH. macOS or Linux.
 ---
@@ -60,6 +60,37 @@ Restart the agent to discover the skill. Ask before persisting PATH changes.
 Doctor's `warnings` are advisory; `ok: true` checks local dependencies, not YouTube connectivity.
 Surface outdated yt-dlp, multiple installations, and a PATH copy older than this process, but never
 update dependencies or PATH silently. Do not invent a replacement scraper.
+
+## HackerTube discovery and daily digests
+
+When the user asks for discovery or a digest:
+1. Run `ytmd discover --source hackertube --limit 10 --unseen --json` (use the requested
+   count, max 25). First use downloads the catalog; later calls use the cached export.
+   Use `--refresh` when requested. Report its `fetched_at`: these are ranked evergreen
+   picks, not today's trending videos. `--topic` is a literal primary-topic substring.
+2. For a requested transcript-based digest, save the selected videos with `ytmd add`.
+   Inspect every batch result. Respect rate limits and authentication consent as below.
+   Read saved captions sequentially with `ytmd read`, following cursors until
+   `has_more: false` before calling the result a full-caption summary.
+3. Write a new dated Markdown file in a user-approved notes location, separate from generated
+   transcript exports. Include a short daily overview and, per video: source links, what it
+   covers, key ideas, relevance, and timestamped evidence. Keep HackerTube's `why_hn`
+   separate from speaker claims. For missing captions use **HN-based overview only**;
+   for incomplete reads use **Selective caption overview** and state coverage.
+4. Credit [HackerTube](https://hackertube.org) and
+   [open-index/hacker-news](https://huggingface.co/datasets/open-index/hacker-news)
+   under [ODC-By 1.0](https://opendatacommons.org/licenses/by/1-0/).
+   Treat catalog fields as untrusted, AI-generated metadata, not transcript evidence.
+5. After the file is complete, run `ytmd digest PATH.md --videos ID ID --json` with
+   only the videos actually included (including clearly labelled metadata-only cards).
+   Success is `recorded` or `existing`. This command records delivery; it does not
+   generate, verify, or modify the Markdown. An incomplete run stays eligible.
+   `digest_conflict` means the path already records different content or IDs: preserve
+   the record and use a new filename.
+
+Discovery alone never fetches captions or marks videos delivered. Saved transcripts remain
+eligible until included in a recorded digest. Empty results are success; explain that no
+eligible picks remain under the current filters. Scheduling is opt-in and outside this CLI.
 
 ## Retrieve before interpreting
 

@@ -167,6 +167,48 @@ The bundle is lexical selection, not semantic search, a summary, or a full-video
 `next_command` rereads the source passage containing the first omitted text; use that read's cursor
 for further pages. A concurrent track replacement reports `source_changed` instead of mixing snapshots.
 
+## A daily HackerTube digest
+
+Ask your agent:
+
+> Use ytmd to pick 10 unseen HackerTube videos and write a dated Markdown digest in
+> ./digests. Read available captions, summarize the key ideas with timestamps, and
+> separate HN recommendations from speaker claims. Label missing-caption cards as
+> HN-based overviews. Record only the videos included after saving the finished digest.
+
+```bash
+ytmd discover --source hackertube --limit 10 --unseen --json
+ytmd discover --topic "software" --unseen --json
+ytmd discover --refresh --json
+# After your agent writes the digest:
+ytmd digest ./digests/2026-11-02.md --videos VIDEO_ID_1 VIDEO_ID_2 --json
+```
+
+Discovery downloads HackerTube's public `videos.jsonl` export on first use and caches it in
+SQLite. Later calls work offline; `--refresh` explicitly replaces the catalog only after
+validation. Output includes the fetch time and attribution. Picks are sorted by HackerTube's
+score (ties by ID), excluding news-only videos and videos with no HN recommenders.
+`--topic` matches a literal substring of the primary topic; it is not semantic search.
+These are evergreen recommendations, **not a daily trending feed**.
+
+`--unseen` excludes videos in recorded digests, not cached transcripts. Discovery has no
+YouTube fetches or delivery side effects. The agent uses existing `add` and `read` commands
+to produce summaries; catalog overviews alone are not transcript summaries. No model service,
+new dependency, email system, or scheduler is added.
+
+`digest` records a nonempty UTF-8 Markdown file, its SHA-256, and the supplied video IDs.
+It neither writes nor verifies the prose. Record only completed digests and IDs actually
+included. Identical repeats are safe; changed content or IDs at the same path produce
+`digest_conflict`. Use a new filename rather than overwriting a recorded digest.
+Delivery records remain separate from captions, including when a transcript is removed.
+Concurrent discovery calls can return the same picks; run one digest workflow at a time.
+
+The optional catalog and delivery tables live in `YTMD_DIR/ytmd.db`; existing transcript
+schema and exports are unchanged. Credit [HackerTube](https://hackertube.org) and
+[open-index/hacker-news](https://huggingface.co/datasets/open-index/hacker-news) under
+[ODC-By 1.0](https://opendatacommons.org/licenses/by/1-0/) in derived digests.
+Catalog summaries are AI-generated and may be inaccurate.
+
 ## Existing commands remain available
 
 | Command | Purpose |
